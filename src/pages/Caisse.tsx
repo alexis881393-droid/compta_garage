@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { dollars, entier } from '../lib/format'
+import { dollars } from '../lib/format'
 import type { Message, Partenaire } from '../lib/types'
 
 type Tarif = { cle: string; libelle: string; prix: number }
@@ -285,12 +285,6 @@ function MonSalaire({ version }: { version: number }) {
         <span>{dollars(s.salaire_min)}</span>
         <span>{dollars(s.salaire_max)}</span>
       </div>
-      <p className="aide">
-        Score social : {entier(s.score)}. Bénéfice rapporté : {dollars(s.benefice)} sur{' '}
-        {s.nb_ventes} ligne{s.nb_ventes > 1 ? 's' : ''}. Au-delà de votre salaire minimum,{' '}
-        {s.salaire_pct} % du bénéfice rapporté s'ajoute au salaire, jusqu'au maximum de la
-        fourchette.
-      </p>
       <p className={`notice ${s.benefice > s.salaire_min ? 'succes' : ''}`}>
         {s.benefice > s.salaire_min
           ? `Salaire minimum remboursé : votre salaire augmente et la prime est débloquée (${s.prime_pct} % de votre part, calculée à la clôture).`

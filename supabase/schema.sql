@@ -123,7 +123,9 @@ create trigger on_auth_user_created
 --   equipe.gerer       attribuer score social et grade aux grades inférieurs
 --   semaine.cloturer   clôturer la semaine (remise à zéro + archive)
 --   admin.utilisateurs gérer tous les comptes sans restriction de grade
--- Attention : relancer ce script remet les permissions des grades à ces valeurs.
+-- Les valeurs ci-dessous sont les droits de DÉPART. Le Patron les modifie ensuite
+-- dans Réglages > Accès par grade : relancer ce script ne les écrase pas
+-- (seul le Patron garde toujours '*').
 insert into public.grades (nom, niveau, permissions)
 values
   ('Stagiaire',        1, '{ventes.creer}'),
@@ -133,7 +135,10 @@ values
   ('Co-patron',        5, '{ventes.creer,ventes.lire_tout,partenaires.gerer,reglages.modifier,compta.globale,equipe.gerer}'),
   ('Patron',           6, '{*}')
 on conflict (nom) do update
-  set niveau = excluded.niveau, permissions = excluded.permissions;
+  set niveau = excluded.niveau,
+      permissions = case when excluded.nom = 'Patron'
+                         then excluded.permissions
+                         else public.grades.permissions end;
 
 -- Le premier compte créé sur le site reçoit le grade Patron (voir creer_profil).
 -- Les suivants passent par un code d'invitation créé dans l'onglet Équipe.
@@ -863,6 +868,42 @@ begin
 end;
 $$;
 
+-- Change les accès d'un grade (Réglages > Accès par grade). Réservé à qui a
+-- 'admin.utilisateurs', donc au Patron. Le grade du Patron ('*') est intouchable
+-- pour que personne ne puisse se retirer l'accès par erreur ; 'admin.utilisateurs'
+-- n'est pas attribuable.
+create or replace function public.maj_permissions(p_grade bigint, p_permissions text[])
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  autorisees constant text[] := array[
+    'ventes.creer', 'ventes.lire_tout', 'partenaires.gerer', 'compta.globale',
+    'equipe.gerer', 'reglages.modifier', 'semaine.cloturer'
+  ];
+  g public.grades;
+begin
+  if not public.a_permission('admin.utilisateurs') then
+    raise exception 'Accès refusé';
+  end if;
+  select * into g from public.grades where id = p_grade;
+  if not found then
+    raise exception 'Grade introuvable';
+  end if;
+  if '*' = any (g.permissions) then
+    raise exception 'Les accès du Patron ne se modifient pas';
+  end if;
+  if exists (select 1 from unnest(coalesce(p_permissions, '{}')) p where p <> all (autorisees)) then
+    raise exception 'Permission inconnue';
+  end if;
+  update public.grades
+  set permissions = (select coalesce(array_agg(distinct p), '{}') from unnest(coalesce(p_permissions, '{}')) p)
+  where id = p_grade;
+end;
+$$;
+
 -- Totaux par type sur les ventes de la semaine ouverte visibles par l'utilisateur.
 create or replace function public.totaux_ventes()
 returns table (type text, nombre bigint, prix_usine numeric, benefice numeric)
@@ -887,6 +928,8 @@ revoke execute on function public.cloturer_semaine() from public, anon;
 revoke execute on function public.marquer_facture(bigint) from public, anon;
 revoke execute on function public.maj_employe(uuid, int, bigint) from public, anon;
 revoke execute on function public.totaux_ventes() from public, anon;
+revoke execute on function public.maj_permissions(bigint, text[]) from public, anon;
+grant execute on function public.maj_permissions(bigint, text[]) to authenticated;
 revoke execute on function public.nouveau_code() from public, anon, authenticated;
 revoke execute on function public.verifier_grade_attribuable(bigint) from public, anon;
 revoke execute on function public.creer_invitation(text, text, text, int, bigint) from public, anon;

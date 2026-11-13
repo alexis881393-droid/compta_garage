@@ -1,14 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../auth/AuthProvider'
+import AccesGrades from '../components/AccesGrades'
 import type { Message } from '../lib/types'
 
 type Tarif = { cle: string; libelle: string; prix: number }
 
 const POURCENTAGES = [
   { cle: 'commission_custom_pct', libelle: "Commission du garage sur un custom (% du prix d'usine)" },
-  { cle: 'remise_partenaire_pct', libelle: 'Remise accordée aux partenaires (%)' },]
+  { cle: 'remise_partenaire_pct', libelle: 'Remise accordée aux partenaires (%)' },
+]
 
 export default function Reglages() {
+  const { peut } = useAuth()
   const [tarifs, setTarifs] = useState<Tarif[]>([])
   const [valeurs, setValeurs] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
@@ -54,6 +58,7 @@ export default function Reglages() {
   }
 
   return (
+    <div className="pile">
     <form className="panneau etroit" onSubmit={enregistrer}>
       <h2>Prix des réparations</h2>
       {tarifs.map((t) => (
@@ -98,5 +103,8 @@ export default function Reglages() {
       </div>
       {message && <p className={`notice ${message.ok ? 'succes' : 'erreur'}`}>{message.texte}</p>}
     </form>
+    {/* Seul le Patron (admin.utilisateurs) choisit les accès des grades */}
+    {peut('admin.utilisateurs') && <AccesGrades />}
+    </div>
   )
 }

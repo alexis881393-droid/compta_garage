@@ -1115,3 +1115,28 @@ body::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
+
+/* Grille des accès par grade */
+input[type='checkbox'] {
+  width: 26px;
+  min-height: 26px;
+  height: 26px;
+  padding: 0;
+  accent-color: var(--bronze);
+  cursor: pointer;
+}
+
+input[type='checkbox']:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+table.acces td.centre,
+table.acces th.centre {
+  text-align: center;
+}
+
+table.acces td:first-child {
+  white-space: normal;
+  min-width: 230px;
+}

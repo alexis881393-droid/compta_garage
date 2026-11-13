@@ -190,7 +190,16 @@ export default function Equipe() {
           fourchette de salaire et le pourcentage de prime.
         </p>
         <div className="table-scroll">
-          <table>
+          <table className="equipe">
+            <colgroup>
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '17%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '17%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th>Prénom</th>

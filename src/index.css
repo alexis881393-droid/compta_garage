@@ -462,3 +462,34 @@ tfoot td {
 input.code {
   text-transform: uppercase;
 }
+
+/* Tableau Équipe : largeurs de colonnes fixes pour que toute la ligne tienne
+   dans la page sans barre de défilement (défilement seulement sur petit écran). */
+table.equipe {
+  table-layout: fixed;
+  min-width: 720px;
+}
+
+table.equipe th,
+table.equipe td {
+  padding: 6px 4px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+table.equipe input,
+table.equipe select {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 6px 8px;
+}
+
+table.equipe .actions {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+table.equipe button {
+  padding: 6px 10px;
+}

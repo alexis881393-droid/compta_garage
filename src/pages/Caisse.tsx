@@ -200,7 +200,12 @@ export default function Caisse() {
           )}
 
           <div className="actions">
-            <button type="button" onClick={valider} disabled={busy || lignes.length === 0}>
+            <button
+              type="button"
+              className="valider"
+              onClick={valider}
+              disabled={busy || lignes.length === 0}
+            >
               Valider le ticket
             </button>
             <button

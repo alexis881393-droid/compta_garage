@@ -10,6 +10,7 @@ import Partenaires from './pages/Partenaires'
 import Equipe from './pages/Equipe'
 import Employes from './pages/Employes'
 import Charges from './pages/Charges'
+import Icone from './components/Icone'
 
 type Onglet =
   | 'caisse'
@@ -28,7 +29,7 @@ export default function App() {
   if (!supabaseConfigured) {
     return (
       <main className="card">
-        <h1>Compta Garage</h1>
+        <h1>Speedcore Auto</h1>
         <p className="notice">
           Base de données non configurée : renseignez <code>VITE_SUPABASE_URL</code> et{' '}
           <code>VITE_SUPABASE_ANON_KEY</code> (voir <code>.env.example</code>).
@@ -56,18 +57,36 @@ export default function App() {
   ]
   const visibles = onglets.filter((o) => o.visible)
   const actif = visibles.find((o) => o.id === onglet) ?? visibles[0]
+  const pseudo = profil?.nom ?? session.user.email?.split('@')[0] ?? ''
 
   return (
     <div className="app">
       <header>
-        <h1>Compta Garage</h1>
-        <div className="compte">
-          <span>
-            <strong>{profil?.nom ?? session.user.email?.split('@')[0]}</strong>
-            {profil?.grade && ` · ${profil.grade.nom}`}
+        <div className="marque">
+          <span className="embleme">
+            <img src="/embleme.png" alt="" width={44} height={44} />
           </span>
-          <button type="button" className="secondaire" onClick={signOut}>
-            Se déconnecter
+          <div>
+            <h1>Speedcore Auto</h1>
+            <p>Comptabilité du garage</p>
+          </div>
+        </div>
+        <div className="compte">
+          <span className="avatar" aria-hidden="true">
+            {pseudo.charAt(0).toUpperCase()}
+          </span>
+          <span className="identite">
+            <strong>{pseudo}</strong>
+            <small>{profil?.grade?.nom ?? 'Sans grade'}</small>
+          </span>
+          <button
+            type="button"
+            className="secondaire rond"
+            onClick={signOut}
+            aria-label="Se déconnecter"
+            title="Se déconnecter"
+          >
+            <Icone nom="sortie" />
           </button>
         </div>
       </header>
@@ -85,13 +104,15 @@ export default function App() {
                 key={o.id}
                 type="button"
                 className={o.id === actif.id ? 'onglet actif' : 'onglet'}
+                aria-current={o.id === actif.id ? 'page' : undefined}
                 onClick={() => setOnglet(o.id)}
               >
+                <Icone nom={o.id} />
                 {o.nom}
               </button>
             ))}
           </nav>
-          <main>
+          <main key={actif.id}>
             {actif.id === 'caisse' && <Caisse />}
             {actif.id === 'compta' && <Compta />}
             {actif.id === 'partenaires' && <Partenaires />}

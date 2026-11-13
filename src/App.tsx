@@ -8,8 +8,18 @@ import Reglages from './pages/Reglages'
 import Globale from './pages/Globale'
 import Partenaires from './pages/Partenaires'
 import Equipe from './pages/Equipe'
+import Employes from './pages/Employes'
+import Charges from './pages/Charges'
 
-type Onglet = 'caisse' | 'compta' | 'partenaires' | 'globale' | 'equipe' | 'reglages'
+type Onglet =
+  | 'caisse'
+  | 'compta'
+  | 'partenaires'
+  | 'globale'
+  | 'employes'
+  | 'charges'
+  | 'equipe'
+  | 'reglages'
 
 export default function App() {
   const { session, profil, loading, peut, signOut } = useAuth()
@@ -39,6 +49,8 @@ export default function App() {
       visible: peut('partenaires.gerer') || peut('compta.globale'),
     },
     { id: 'globale', nom: 'Compta globale', visible: peut('compta.globale') },
+    { id: 'employes', nom: 'Résultats employés', visible: peut('compta.globale') },
+    { id: 'charges', nom: 'Charges', visible: peut('compta.globale') },
     { id: 'equipe', nom: 'Équipe', visible: peut('equipe.gerer') },
     { id: 'reglages', nom: 'Réglages', visible: peut('reglages.modifier') },
   ]
@@ -84,6 +96,8 @@ export default function App() {
             {actif.id === 'compta' && <Compta />}
             {actif.id === 'partenaires' && <Partenaires />}
             {actif.id === 'globale' && <Globale />}
+            {actif.id === 'employes' && <Employes />}
+            {actif.id === 'charges' && <Charges />}
             {actif.id === 'equipe' && <Equipe />}
             {actif.id === 'reglages' && <Reglages />}
           </main>

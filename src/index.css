@@ -446,3 +446,9 @@ td select {
   padding: 6px 8px;
   max-width: 160px;
 }
+
+tfoot td {
+  border-bottom: 0;
+  border-top: 2px solid var(--border);
+  font-weight: 600;
+}

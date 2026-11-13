@@ -1101,3 +1101,17 @@ tfoot td.num {
 .plaque {
   box-shadow: inset 0 1px 0 #fff, 0 0 0 2px var(--bronze), 0 14px 30px -14px rgba(201, 155, 99, 0.75);
 }
+
+/* Barre de défilement de la page masquée : le défilement (souris, doigt,
+   molette, clavier) fonctionne toujours. */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

@@ -26,15 +26,16 @@
   /* Verre */
   /* Verre presque opaque, teinté bleu : le décor ne passe quasiment plus
      derrière le texte, seul le reflet de bord rappelle le verre */
-  --verre: linear-gradient(155deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03) 45%, rgba(255, 255, 255, 0.06)),
-    rgba(26, 40, 96, 0.94);
-  --verre-bord: rgba(255, 255, 255, 0.3);
+  /* Panneaux 100 % opaques (aucune transparence, aucun flou) : seul le
+     dégradé et le reflet de bord gardent l'aspect verre. */
+  --verre: linear-gradient(160deg, #2c3f8c, #1c2b66 45%, #18245a);
+  --verre-bord: #5a6fb8;
   --verre-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
     inset 1px 0 0 rgba(255, 255, 255, 0.06);
   --ombre: 0 24px 60px -24px rgba(1, 4, 22, 0.85), 0 2px 8px rgba(1, 4, 22, 0.25);
-  --flou: blur(26px) saturate(170%);
-  --filet: rgba(255, 255, 255, 0.18);
-  --creux: rgba(5, 10, 34, 0.9);
+  --flou: none;
+  --filet: #46599e;
+  --creux: #0b1238;
 
   /* Rayons : plus doux sur les conteneurs, plus serrés à l'intérieur */
   --r-panneau: 28px;
@@ -366,7 +367,7 @@ select {
   width: 100%;
   min-height: 48px;
   padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.34);
+  border: 1px solid #7183c6;
   border-radius: var(--r-champ);
   background: var(--creux);
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -454,16 +455,16 @@ button:focus-visible {
 
 /* Désactivé : désaturé mais toujours lisible */
 button:disabled {
-  opacity: 0.8;
-  filter: saturate(0.4) brightness(0.85);
+  opacity: 1;
+  filter: saturate(0.35) brightness(0.8);
   cursor: default;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Verre neutre : actions secondaires */
 button.secondaire {
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1));
-  border-color: rgba(255, 255, 255, 0.36);
+  background: linear-gradient(170deg, #5266a8, #3c4f90);
+  border-color: #8697d6;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   color: #fff;
   font-weight: 600;
@@ -515,14 +516,14 @@ button.onglet {
 }
 
 button.onglet:hover:not(.actif) {
-  background: rgba(255, 255, 255, 0.07);
+  background: #34478f;
   color: var(--texte);
   filter: none;
 }
 
 button.onglet.actif {
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1));
-  border-color: rgba(255, 255, 255, 0.28);
+  background: linear-gradient(170deg, #6f86d6, #4a61b4);
+  border-color: #a9b8ee;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 18px -10px rgba(47, 95, 224, 0.9);
   color: #fff;
   font-weight: 600;
@@ -691,20 +692,20 @@ button.gros strong {
   padding: 12px 16px;
   border: 1px solid var(--verre-bord);
   border-radius: var(--r-champ);
-  background: rgba(255, 255, 255, 0.1);
+  background: #2f4189;
   font-size: 0.98rem;
   font-weight: 500;
 }
 
 .notice.succes {
-  border-color: rgba(110, 231, 168, 0.7);
-  background: rgba(22, 92, 62, 0.55);
+  border-color: #5fd69a;
+  background: #175c40;
   color: #d6ffe8;
 }
 
 .notice.erreur {
-  border-color: rgba(255, 138, 138, 0.75);
-  background: rgba(120, 28, 36, 0.6);
+  border-color: #ff8a8a;
+  background: #7a1f28;
   color: #ffe0e0;
 }
 
@@ -820,7 +821,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: #26377a;
 }
 
 tbody tr:last-child td {
@@ -927,7 +928,7 @@ details .actions {
 
 /* Verre dans le verre : on allège les panneaux imbriqués (archives) */
 details .panneau {
-  background: rgba(255, 255, 255, 0.045);
+  background: #223272;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

@@ -475,7 +475,8 @@ $$;
 -- et cloturer_semaine, jamais directement par le site.
 --   bénéfice − (charges saisies + salaires) = bénéfice imposable
 --   bénéfice imposable − impôt = reste
---   prime d'un employé = reste × (sa part du bénéfice) × son % de prime
+--   prime d'un employé = reste × (sa part du bénéfice) × son % de prime,
+--   et 0 s'il n'a pas rapporté plus que son salaire minimum (sa part reste au garage)
 create or replace function public.calcul_semaine(p_semaine bigint)
 returns jsonb
 language plpgsql
@@ -542,6 +543,9 @@ begin
 
   select coalesce(jsonb_agg(x || jsonb_build_object('prime',
            case when v_reste > 0 and v_benef > 0
+                     -- Pas de prime tant que l'employé n'a pas rapporté plus
+                     -- que son salaire minimum.
+                     and (x ->> 'benefice')::numeric > (x ->> 'salaire_min')::numeric
                 then round(v_reste * (x ->> 'benefice')::numeric / v_benef * (x ->> 'prime_pct')::numeric / 100)
                 else 0 end)
            order by (x ->> 'benefice')::numeric desc, x ->> 'nom'), '[]'::jsonb)

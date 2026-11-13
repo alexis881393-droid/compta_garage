@@ -285,6 +285,13 @@ function MonSalaire({ version }: { version: number }) {
         {s.nb_ventes} ligne{s.nb_ventes > 1 ? 's' : ''}. {s.salaire_pct} % de ce bénéfice s'ajoute au
         minimum, jusqu'au maximum de la fourchette.
       </p>
+      <p className={`notice ${s.benefice > s.salaire_min ? 'succes' : ''}`}>
+        {s.benefice > s.salaire_min
+          ? `Prime débloquée (${s.prime_pct} % de votre part), calculée à la clôture de la semaine.`
+          : `Pas encore de prime : il faut rapporter plus que votre salaire minimum. Encore ${dollars(
+              s.salaire_min - s.benefice + 1,
+            )} de bénéfice.`}
+      </p>
     </section>
   )
 }

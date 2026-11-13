@@ -47,23 +47,62 @@ as $$
   );
 $$;
 
--- Crée automatiquement le profil à l'inscription. Le tout premier compte créé
--- devient Patron ; les suivants n'ont aucun grade tant que la direction ne leur
--- en attribue pas un.
+-- Fiche d'un employé, créée par la direction AVANT que l'employé ait un compte.
+-- Elle porte les informations privées (vrai nom, téléphone), visibles de la
+-- direction seulement, et le code d'invitation à 6 caractères que l'employé
+-- saisit à sa première connexion pour créer son compte (pseudo + mot de passe).
+-- "profil_id" est nul tant que le code n'a pas été utilisé.
+-- Une fois le compte créé, score social et grade vivent dans "profils" ; ceux
+-- de la fiche ne servent qu'à l'initialiser.
+create table if not exists public.fiches (
+  id           bigint generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+  code         text unique,
+  prenom       text not null default '',
+  nom          text not null default '',
+  telephone    text not null default '',
+  score_social int not null default 0 check (score_social >= 0),
+  grade_id     bigint references public.grades (id) on delete set null,
+  profil_id    uuid unique references public.profils (id) on delete cascade,
+  activee_le   timestamptz
+);
+
+-- Les comptes créés avant le système d'invitation reçoivent une fiche vide.
+insert into public.fiches (profil_id, activee_le)
+select p.id, p.created_at from public.profils p
+where not exists (select 1 from public.fiches f where f.profil_id = p.id);
+
+-- Crée le profil à l'inscription. Le tout premier compte devient Patron. Tous
+-- les suivants doivent fournir un code d'invitation valide : sans lui,
+-- l'inscription est refusée (personne ne peut s'inscrire seul).
 create or replace function public.creer_profil()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  f public.fiches;
 begin
-  insert into public.profils (id, nom, grade_id)
-  values (
-    new.id,
-    new.raw_user_meta_data ->> 'nom',
-    case when not exists (select 1 from public.profils)
-         then (select id from public.grades where nom = 'Patron') end
-  );
+  if not exists (select 1 from public.profils) then
+    insert into public.profils (id, nom, grade_id)
+    values (new.id, new.raw_user_meta_data ->> 'nom',
+            (select id from public.grades where nom = 'Patron'));
+    insert into public.fiches (profil_id, activee_le) values (new.id, now());
+    return new;
+  end if;
+
+  select * into f from public.fiches
+  where code = upper(trim(coalesce(new.raw_user_meta_data ->> 'code', '')))
+    and profil_id is null
+  for update;
+  if not found then
+    raise exception 'Code d''invitation invalide ou déjà utilisé';
+  end if;
+
+  insert into public.profils (id, nom, grade_id, score_social)
+  values (new.id, new.raw_user_meta_data ->> 'nom', f.grade_id, f.score_social);
+  update public.fiches set profil_id = new.id, activee_le = now() where id = f.id;
   return new;
 end;
 $$;
@@ -97,6 +136,7 @@ on conflict (nom) do update
   set niveau = excluded.niveau, permissions = excluded.permissions;
 
 -- Le premier compte créé sur le site reçoit le grade Patron (voir creer_profil).
+-- Les suivants passent par un code d'invitation créé dans l'onglet Équipe.
 -- Pour le donner à la main à un autre compte :
 --   update public.profils
 --   set grade_id = (select id from public.grades where nom = 'Patron')
@@ -217,6 +257,7 @@ create table if not exists public.charges (
 
 alter table public.grades      enable row level security;
 alter table public.profils     enable row level security;
+alter table public.fiches      enable row level security;
 alter table public.tarifs      enable row level security;
 alter table public.reglages    enable row level security;
 alter table public.semaines    enable row level security;
@@ -252,6 +293,13 @@ create policy "grades_admin" on public.grades
 -- Score et grade ne se modifient que par la fonction maj_employe.
 create policy "profils_lecture" on public.profils
   for select to authenticated using (true);
+
+-- Fiches (vrai nom, téléphone, codes d'invitation) : direction uniquement.
+-- Aucune règle d'écriture : tout passe par creer_invitation, maj_fiche et
+-- annuler_invitation.
+drop policy if exists "fiches_lecture" on public.fiches;
+create policy "fiches_lecture" on public.fiches
+  for select to authenticated using (public.a_permission('equipe.gerer'));
 
 create policy "tarifs_lecture" on public.tarifs
   for select to authenticated using (true);
@@ -517,7 +565,7 @@ begin
 
   -- Tout employé ayant un grade touche au moins le minimum de sa fourchette.
   select coalesce(jsonb_agg(jsonb_build_object(
-           'id', e.id, 'nom', e.nom, 'grade', e.grade, 'score', e.score,
+           'id', e.id, 'nom', e.nom, 'nom_reel', e.nom_reel, 'grade', e.grade, 'score', e.score,
            'nb_ventes', e.nb, 'benefice', e.benefice,
            'salaire_min', b.salaire_min, 'salaire_max', b.salaire_max,
            'salaire', public.salaire_calcule(e.score, e.benefice),
@@ -525,9 +573,11 @@ begin
     into v_emp
   from (
     select p.id, p.nom, g.nom as grade, p.score_social as score,
+           nullif(trim(coalesce(fi.prenom, '') || ' ' || coalesce(fi.nom, '')), '') as nom_reel,
            coalesce(v.nb, 0) as nb, coalesce(v.benefice, 0) as benefice
     from public.profils p
     left join public.grades g on g.id = p.grade_id
+    left join public.fiches fi on fi.profil_id = p.id
     left join (
       select employe_id, count(*) as nb, sum(benefice) as benefice
       from public.ventes where semaine_id = p_semaine group by employe_id
@@ -668,6 +718,147 @@ begin
 end;
 $$;
 
+-- Refuse l'attribution d'un grade égal ou supérieur au sien (sauf 'admin.utilisateurs').
+create or replace function public.verifier_grade_attribuable(p_grade bigint)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  mon_niveau int;
+  nouveau_niveau int;
+begin
+  if public.a_permission('admin.utilisateurs') then
+    return;
+  end if;
+  select g.niveau into mon_niveau
+  from public.profils p join public.grades g on g.id = p.grade_id
+  where p.id = auth.uid();
+  select niveau into nouveau_niveau from public.grades where id = p_grade;
+  if coalesce(nouveau_niveau, 0) >= coalesce(mon_niveau, 0) then
+    raise exception 'Vous ne pouvez gérer que les grades inférieurs au vôtre';
+  end if;
+end;
+$$;
+
+-- Code d'invitation : 6 caractères tirés au hasard (générateur cryptographique
+-- de gen_random_uuid), sans les caractères qui se confondent (0/O, 1/I/L).
+create or replace function public.nouveau_code()
+returns text
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  alphabet constant text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  octets bytea;
+  c text;
+begin
+  loop
+    -- Les 6 premiers octets d'un UUID v4 sont entièrement aléatoires.
+    octets := uuid_send(gen_random_uuid());
+    c := '';
+    for i in 0..5 loop
+      c := c || substr(alphabet, 1 + get_byte(octets, i) % length(alphabet), 1);
+    end loop;
+    exit when not exists (select 1 from public.fiches where code = c);
+  end loop;
+  return c;
+end;
+$$;
+
+-- Crée la fiche d'un futur employé et renvoie son code d'invitation.
+create or replace function public.creer_invitation(
+  p_prenom text, p_nom text, p_telephone text, p_score int, p_grade bigint
+)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  c text;
+begin
+  if not public.a_permission('equipe.gerer') then
+    raise exception 'Accès refusé';
+  end if;
+  if length(trim(coalesce(p_prenom, ''))) = 0 or length(trim(coalesce(p_nom, ''))) = 0 then
+    raise exception 'Prénom et nom obligatoires';
+  end if;
+  if p_score is null or p_score < 0 then
+    raise exception 'Score social invalide';
+  end if;
+  if p_grade is null or not exists (select 1 from public.grades where id = p_grade) then
+    raise exception 'Grade obligatoire';
+  end if;
+  perform public.verifier_grade_attribuable(p_grade);
+  c := public.nouveau_code();
+  insert into public.fiches (code, prenom, nom, telephone, score_social, grade_id)
+  values (c, trim(p_prenom), trim(p_nom), trim(coalesce(p_telephone, '')), p_score, p_grade);
+  return c;
+end;
+$$;
+
+-- Modifie une fiche. Compte déjà créé : score et grade passent par maj_employe
+-- (mêmes contrôles de hiérarchie). Invitation en attente : ils restent sur la fiche.
+create or replace function public.maj_fiche(
+  p_id bigint, p_prenom text, p_nom text, p_telephone text, p_score int, p_grade bigint
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  f public.fiches;
+begin
+  if not public.a_permission('equipe.gerer') then
+    raise exception 'Accès refusé';
+  end if;
+  select * into f from public.fiches where id = p_id for update;
+  if not found then
+    raise exception 'Fiche introuvable';
+  end if;
+  if f.profil_id is not null then
+    perform public.maj_employe(f.profil_id, p_score, p_grade);
+  else
+    if p_score is null or p_score < 0 then
+      raise exception 'Score social invalide';
+    end if;
+    perform public.verifier_grade_attribuable(f.grade_id);
+    perform public.verifier_grade_attribuable(p_grade);
+  end if;
+  update public.fiches
+  set prenom = trim(coalesce(p_prenom, '')),
+      nom = trim(coalesce(p_nom, '')),
+      telephone = trim(coalesce(p_telephone, '')),
+      score_social = p_score,
+      grade_id = p_grade
+  where id = p_id;
+end;
+$$;
+
+-- Supprime une invitation dont le code n'a pas encore été utilisé.
+create or replace function public.annuler_invitation(p_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.a_permission('equipe.gerer') then
+    raise exception 'Accès refusé';
+  end if;
+  delete from public.fiches where id = p_id and profil_id is null;
+  if not found then
+    raise exception 'Invitation introuvable ou déjà utilisée';
+  end if;
+end;
+$$;
+
 -- Totaux par type sur les ventes de la semaine ouverte visibles par l'utilisateur.
 create or replace function public.totaux_ventes()
 returns table (type text, nombre bigint, prix_usine numeric, benefice numeric)
@@ -692,6 +883,15 @@ revoke execute on function public.cloturer_semaine() from public, anon;
 revoke execute on function public.marquer_facture(bigint) from public, anon;
 revoke execute on function public.maj_employe(uuid, int, bigint) from public, anon;
 revoke execute on function public.totaux_ventes() from public, anon;
+revoke execute on function public.nouveau_code() from public, anon, authenticated;
+revoke execute on function public.verifier_grade_attribuable(bigint) from public, anon;
+revoke execute on function public.creer_invitation(text, text, text, int, bigint) from public, anon;
+revoke execute on function public.maj_fiche(bigint, text, text, text, int, bigint) from public, anon;
+revoke execute on function public.annuler_invitation(bigint) from public, anon;
+grant execute on function public.verifier_grade_attribuable(bigint) to authenticated;
+grant execute on function public.creer_invitation(text, text, text, int, bigint) to authenticated;
+grant execute on function public.maj_fiche(bigint, text, text, text, int, bigint) to authenticated;
+grant execute on function public.annuler_invitation(bigint) to authenticated;
 grant execute on function public.enregistrer_ticket(jsonb, bigint) to authenticated;
 grant execute on function public.mon_salaire() to authenticated;
 grant execute on function public.resume_semaine() to authenticated;

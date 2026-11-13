@@ -452,3 +452,13 @@ tfoot td {
   border-top: 2px solid var(--border);
   font-weight: 600;
 }
+
+.code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 1.1em;
+  letter-spacing: 0.15em;
+}
+
+input.code {
+  text-transform: uppercase;
+}

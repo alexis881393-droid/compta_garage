@@ -58,7 +58,10 @@ export function TableEmployes({ resume: r }: { resume: Resume }) {
             <tbody>
               {r.employes.map((e) => (
                 <tr key={e.id}>
-                  <td>{e.nom ?? '—'}</td>
+                  <td>
+                    {e.nom_reel ?? e.nom ?? '—'}
+                    {e.nom_reel && e.nom && <span className="discret"> ({e.nom})</span>}
+                  </td>
                   <td>{e.grade ?? '—'}</td>
                   <td className="num">{entier(e.score)}</td>
                   <td className="num">{e.nb_ventes}</td>

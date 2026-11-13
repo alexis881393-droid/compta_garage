@@ -4,7 +4,10 @@ export type Partenaire = { id: number; nom: string; actif: boolean }
 
 export type EmployeResume = {
   id: string
+  /** Pseudo de connexion. */
   nom: string | null
+  /** Prénom et nom réels ; absent des archives antérieures aux fiches. */
+  nom_reel?: string | null
   grade: string | null
   score: number
   nb_ventes: number

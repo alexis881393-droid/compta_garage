@@ -285,13 +285,6 @@ function MonSalaire({ version }: { version: number }) {
         <span>{dollars(s.salaire_min)}</span>
         <span>{dollars(s.salaire_max)}</span>
       </div>
-      <p className={`notice ${s.benefice > s.salaire_min ? 'succes' : ''}`}>
-        {s.benefice > s.salaire_min
-          ? `Salaire minimum remboursé : votre salaire augmente et la prime est débloquée (${s.prime_pct} % de votre part, calculée à la clôture).`
-          : `Salaire minimum pas encore remboursé : ni augmentation ni prime. Encore ${dollars(
-              s.salaire_min - s.benefice + 1,
-            )} de bénéfice à rapporter.`}
-      </p>
     </section>
   )
 }

@@ -268,9 +268,8 @@ function MonSalaire({ version }: { version: number }) {
   }, [version])
 
   if (!s) return null
-  const etendue = s.salaire_max - s.salaire_min
-  const avancement = etendue > 0 ? ((s.salaire - s.salaire_min) / etendue) * 100 : 100
 
+  // Pas de plafond : le salaire part du minimum garanti et monte avec les ventes.
   return (
     <section className="panneau">
       <h2>Mon salaire cette semaine</h2>
@@ -278,12 +277,9 @@ function MonSalaire({ version }: { version: number }) {
         <dt>Salaire actuel</dt>
         <dd>{dollars(s.salaire)}</dd>
       </dl>
-      <div className="jauge" role="img" aria-label={`${Math.round(avancement)} % de la fourchette`}>
-        <div style={{ width: `${avancement}%` }} />
-      </div>
       <div className="bornes">
-        <span>{dollars(s.salaire_min)}</span>
-        <span>{dollars(s.salaire_max)}</span>
+        <span>Minimum garanti : {dollars(s.salaire_min)}</span>
+        {s.salaire > s.salaire_min && <span>+ {dollars(s.salaire - s.salaire_min)}</span>}
       </div>
     </section>
   )

@@ -373,9 +373,10 @@ as $$
 $$;
 
 -- Salaire de la semaine : minimum de la fourchette + un pourcentage du bénéfice
--- que l'employé a rapporté AU-DELÀ de ce minimum, plafonné au maximum de la
--- fourchette. Tant qu'il n'a pas remboursé son salaire minimum, il ne touche
--- que ce minimum : la part variable ne peut pas mettre le garage en négatif.
+-- que l'employé a rapporté AU-DELÀ de ce minimum. Il n'y a PAS de maximum : le
+-- salaire_max du barème n'est plus appliqué. Tant que l'employé n'a pas
+-- remboursé son salaire minimum, il ne touche que ce minimum : la part
+-- variable ne peut pas mettre le garage en négatif.
 create or replace function public.salaire_calcule(p_score int, p_benefice numeric)
 returns bigint
 language sql
@@ -383,8 +384,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select least(
-    b.salaire_max,
+  select (
     b.salaire_min + round(
       greatest(coalesce(p_benefice, 0) - b.salaire_min, 0)
       * coalesce((select valeur from public.reglages where cle = 'salaire_pct_ventes'), 10) / 100

@@ -679,7 +679,7 @@ button.gros strong {
 .bornes {
   display: flex;
   justify-content: space-between;
-  margin-top: -8px;
+  margin-top: -4px;
   font-size: 0.82rem;
   color: var(--texte-doux);
   font-variant-numeric: tabular-nums;

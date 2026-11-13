@@ -19,19 +19,21 @@
   /* Fond et texte */
   --nuit: #060a1a;
   --texte: #eef2ff;
-  --texte-doux: #a9b4d6;
+  --texte-doux: #ccd5f0;
   --ok: #6ee7a8;
   --ko: #ff8a8a;
 
   /* Verre */
-  --verre: linear-gradient(155deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045) 45%, rgba(255, 255, 255, 0.07));
-  --verre-bord: rgba(255, 255, 255, 0.16);
+  /* Le verre est teinté bleu et assez opaque pour bien se détacher du fond */
+  --verre: linear-gradient(155deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.08)),
+    rgba(34, 52, 112, 0.62);
+  --verre-bord: rgba(255, 255, 255, 0.3);
   --verre-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
     inset 1px 0 0 rgba(255, 255, 255, 0.06);
   --ombre: 0 24px 60px -24px rgba(1, 4, 22, 0.85), 0 2px 8px rgba(1, 4, 22, 0.25);
   --flou: blur(26px) saturate(170%);
-  --filet: rgba(255, 255, 255, 0.09);
-  --creux: rgba(3, 7, 26, 0.42);
+  --filet: rgba(255, 255, 255, 0.18);
+  --creux: rgba(4, 9, 32, 0.62);
 
   /* Rayons : plus doux sur les conteneurs, plus serrés à l'intérieur */
   --r-panneau: 28px;
@@ -83,7 +85,7 @@ body {
   width: 78vmax;
   height: 17vmax;
   clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
-  opacity: 0.1;
+  opacity: 0.06;
 }
 
 .fond i:first-child {
@@ -130,7 +132,7 @@ code {
 .aide {
   margin: 0;
   max-width: 68ch;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--texte-doux);
 }
 
@@ -353,9 +355,9 @@ form {
 label {
   display: grid;
   gap: 7px;
-  font-size: 0.86rem;
-  font-weight: 500;
-  color: var(--texte-doux);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--texte);
 }
 
 input,
@@ -363,23 +365,25 @@ select {
   width: 100%;
   min-height: 48px;
   padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.34);
   border-radius: var(--r-champ);
   background: var(--creux);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.07);
-  color: var(--texte);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #fff;
   font: inherit;
-  font-weight: 500;
+  font-size: 1.02rem;
+  font-weight: 600;
   transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
 }
 
 input::placeholder {
-  color: rgba(169, 180, 214, 0.5);
+  color: rgba(204, 213, 240, 0.6);
+  font-weight: 400;
 }
 
 input:hover,
 select:hover {
-  border-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 input:focus-visible,
@@ -447,19 +451,21 @@ button:focus-visible {
   outline-offset: 3px;
 }
 
+/* Désactivé : désaturé mais toujours lisible */
 button:disabled {
-  opacity: 0.4;
+  opacity: 0.62;
+  filter: saturate(0.45);
   cursor: default;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Verre neutre : actions secondaires */
 button.secondaire {
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
-  color: var(--texte);
-  font-weight: 500;
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1));
+  border-color: rgba(255, 255, 255, 0.36);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-weight: 600;
 }
 
 button.rond {
@@ -501,8 +507,8 @@ button.onglet {
   border-radius: 999px;
   background: none;
   box-shadow: none;
-  color: var(--texte-doux);
-  font-size: 0.92rem;
+  color: var(--texte);
+  font-size: 0.95rem;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -560,11 +566,12 @@ button.gros {
   min-height: 116px;
   padding: 16px 16px 14px;
   border-radius: var(--r-bloc);
-  border-color: rgba(255, 255, 255, 0.18);
-  background: linear-gradient(165deg, rgba(111, 151, 255, 0.34), rgba(47, 95, 224, 0.12) 55%, rgba(255, 255, 255, 0.05));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 14px 26px -16px rgba(47, 95, 224, 0.9);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(165deg, #5580f0, var(--bleu) 50%, var(--bleu-profond));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 14px 26px -14px rgba(47, 95, 224, 1);
   text-align: left;
-  font-weight: 500;
+  font-size: 1.02rem;
+  font-weight: 600;
   line-height: 1.25;
 }
 
@@ -573,7 +580,8 @@ button.gros strong {
   font-size: 1.55rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--bronze-clair);
+  color: #ffe2b3;
+  text-shadow: 0 1px 2px rgba(10, 20, 70, 0.6);
   font-variant-numeric: tabular-nums;
 }
 
@@ -623,8 +631,9 @@ button.gros strong {
 }
 
 .resume dt {
-  color: var(--texte-doux);
-  font-size: 0.92rem;
+  color: var(--texte);
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .resume dd {
@@ -681,20 +690,21 @@ button.gros strong {
   padding: 12px 16px;
   border: 1px solid var(--verre-bord);
   border-radius: var(--r-champ);
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 0.92rem;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.98rem;
+  font-weight: 500;
 }
 
 .notice.succes {
-  border-color: rgba(110, 231, 168, 0.4);
-  background: rgba(110, 231, 168, 0.1);
-  color: var(--ok);
+  border-color: rgba(110, 231, 168, 0.7);
+  background: rgba(22, 92, 62, 0.55);
+  color: #d6ffe8;
 }
 
 .notice.erreur {
-  border-color: rgba(255, 138, 138, 0.45);
-  background: rgba(255, 138, 138, 0.1);
-  color: var(--ko);
+  border-color: rgba(255, 138, 138, 0.75);
+  background: rgba(120, 28, 36, 0.6);
+  color: #ffe0e0;
 }
 
 .app > .notice {
@@ -800,8 +810,8 @@ td {
 th {
   padding-top: 4px;
   color: var(--texte-doux);
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.86rem;
+  font-weight: 600;
 }
 
 tbody tr {

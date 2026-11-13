@@ -94,13 +94,23 @@ export function TableEmployes({ resume: r }: { resume: Resume }) {
   )
 }
 
-/** Semaine archivée complète : compta, employés et charges figés à la clôture. */
-export default function ResumeSemaine({ resume }: { resume: Resume }) {
+/**
+ * Semaine archivée : compta, employés et charges figés à la clôture.
+ * `sansCharges` masque la liste figée quand l'appelant affiche déjà le détail
+ * des charges lu dans la base (avec date et auteur).
+ */
+export default function ResumeSemaine({
+  resume,
+  sansCharges = false,
+}: {
+  resume: Resume
+  sansCharges?: boolean
+}) {
   return (
     <>
       <CascadeCompta resume={resume} />
       <TableEmployes resume={resume} />
-      {resume.charges.length > 0 && (
+      {!sansCharges && resume.charges.length > 0 && (
         <section className="panneau">
           <h2>Charges saisies</h2>
           <ul className="ticket">

@@ -1,11 +1,168 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { date, dollars } from '../lib/format'
+import { date, dateHeure, dollars } from '../lib/format'
 import { useAuth } from '../auth/AuthProvider'
 import ResumeSemaine, { CascadeCompta } from '../components/ResumeSemaine'
 import type { Message, Resume } from '../lib/types'
 
 type Archive = { id: number; debut: string; fin: string; resume: Resume | null }
+
+type VenteArchive = {
+  id: number
+  created_at: string
+  ticket_id: number | null
+  type: 'reparation' | 'custom'
+  libelle: string
+  quantite: number
+  prix_usine: number
+  benefice: number
+  remise_pct: number
+  employe: { nom: string | null } | null
+  partenaire: { nom: string } | null
+}
+
+type ChargeArchive = {
+  id: number
+  created_at: string
+  libelle: string
+  montant: number
+  auteur: { nom: string | null } | null
+}
+
+/**
+ * Une semaine clôturée. Le résumé (compta, salaires, primes) est figé dans
+ * l'archive ; le détail des ventes et des charges est relu dans la base à
+ * l'ouverture du bloc, ces lignes restant rattachées à leur semaine.
+ */
+function ArchiveSemaine({ archive: a }: { archive: Archive }) {
+  const [ventes, setVentes] = useState<VenteArchive[] | null>(null)
+  const [charges, setCharges] = useState<ChargeArchive[] | null>(null)
+  const [erreur, setErreur] = useState<string | null>(null)
+
+  const ouvrir = async (ouvert: boolean) => {
+    if (!ouvert || ventes || !supabase) return
+    const [v, c] = await Promise.all([
+      supabase
+        .from('ventes')
+        .select(
+          'id, created_at, ticket_id, type, libelle, quantite, prix_usine, benefice, remise_pct, employe:profils(nom), partenaire:partenaires(nom)',
+        )
+        .eq('semaine_id', a.id)
+        .order('created_at'),
+      supabase
+        .from('charges')
+        .select('id, created_at, libelle, montant, auteur:profils(nom)')
+        .eq('semaine_id', a.id)
+        .order('created_at'),
+    ])
+    const err = v.error ?? c.error
+    if (err) setErreur(err.message)
+    setVentes((v.data as unknown as VenteArchive[] | null) ?? [])
+    setCharges((c.data as unknown as ChargeArchive[] | null) ?? [])
+  }
+
+  return (
+    <details onToggle={(e) => ouvrir(e.currentTarget.open)}>
+      <summary>
+        Du {date(a.debut)} au {date(a.fin)}
+        {a.resume &&
+          ` · bénéfice ${dollars(a.resume.benefice)} · reste au garage ${dollars(a.resume.solde)}`}
+      </summary>
+      <div className="pile">
+        {erreur && <p className="notice erreur">Chargement du détail impossible : {erreur}</p>}
+        {a.resume && <ResumeSemaine resume={a.resume} sansCharges />}
+
+        <section className="panneau">
+          <h2>Charges de la semaine</h2>
+          {!charges ? (
+            <p className="aide">Chargement…</p>
+          ) : charges.length === 0 ? (
+            <p className="aide">Aucune charge saisie.</p>
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Libellé</th>
+                    <th>Saisie par</th>
+                    <th className="num">Montant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {charges.map((c) => (
+                    <tr key={c.id}>
+                      <td>{dateHeure(c.created_at)}</td>
+                      <td>{c.libelle}</td>
+                      <td>{c.auteur?.nom ?? '—'}</td>
+                      <td className="num">{dollars(c.montant)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={3}>Total</td>
+                    <td className="num">{dollars(charges.reduce((s, c) => s + c.montant, 0))}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="panneau">
+          <h2>Toutes les ventes de la semaine</h2>
+          {!ventes ? (
+            <p className="aide">Chargement…</p>
+          ) : ventes.length === 0 ? (
+            <p className="aide">Aucune vente.</p>
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Ticket</th>
+                    <th>Employé</th>
+                    <th>Vente</th>
+                    <th>Partenaire</th>
+                    <th className="num">Prix d'usine</th>
+                    <th className="num">Bénéfice</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ventes.map((v) => (
+                    <tr key={v.id}>
+                      <td>{dateHeure(v.created_at)}</td>
+                      <td>{v.ticket_id ?? '—'}</td>
+                      <td>{v.employe?.nom ?? '—'}</td>
+                      <td>
+                        {v.libelle}
+                        {v.quantite > 1 && ` × ${v.quantite}`}
+                      </td>
+                      <td>
+                        {v.partenaire ? `${v.partenaire.nom} (−${Number(v.remise_pct)} %)` : '—'}
+                      </td>
+                      <td className="num">{v.type === 'custom' ? dollars(v.prix_usine) : '—'}</td>
+                      <td className="num">{dollars(v.benefice)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={5}>Total ({ventes.length} lignes)</td>
+                    <td className="num">{dollars(ventes.reduce((s, v) => s + v.prix_usine, 0))}</td>
+                    <td className="num">{dollars(ventes.reduce((s, v) => s + v.benefice, 0))}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </details>
+  )
+}
 
 export default function Globale() {
   const { peut } = useAuth()
@@ -82,19 +239,7 @@ export default function Globale() {
         {archives.length === 0 ? (
           <p className="aide">Aucune semaine archivée.</p>
         ) : (
-          archives.map((a) => (
-            <details key={a.id}>
-              <summary>
-                Du {date(a.debut)} au {date(a.fin)}
-                {a.resume && ` · bénéfice ${dollars(a.resume.benefice)}`}
-              </summary>
-              {a.resume && (
-                <div className="pile">
-                  <ResumeSemaine resume={a.resume} />
-                </div>
-              )}
-            </details>
-          ))
+          archives.map((a) => <ArchiveSemaine key={a.id} archive={a} />)
         )}
       </section>
     </div>

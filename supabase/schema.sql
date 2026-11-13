@@ -487,16 +487,23 @@ $$;
 
 -- Ligne de l'employé connecté dans le calcul de la semaine ouverte : salaire
 -- minimum, bénéfice rapporté, pourcentage et montant provisoire de sa prime.
+-- (plpgsql et non sql : calcul_semaine est définie plus bas dans ce fichier, et
+-- une fonction sql exigerait qu'elle existe déjà sur une base neuve.)
 create or replace function public.mon_salaire()
 returns jsonb
-language sql
+language plpgsql
 stable
 security definer
 set search_path = ''
 as $$
-  select e - 'nom_reel'
+declare
+  ligne jsonb;
+begin
+  select e - 'nom_reel' into ligne
   from jsonb_array_elements(public.calcul_semaine(public.semaine_ouverte()) -> 'employes') e
   where e ->> 'id' = auth.uid()::text;
+  return ligne;
+end;
 $$;
 
 -- Calcul complet d'une semaine. Fonction interne : appelée par resume_semaine
@@ -504,9 +511,12 @@ $$;
 --   bénéfice − (charges saisies + salaires) = bénéfice imposable
 --   bénéfice imposable − impôt = reste
 --   salaire d'un employé = le minimum de son barème, toujours
---   prime d'un employé = reste × (sa part du bénéfice) × le % de son barème,
---   versée seulement s'il a rapporté plus que son salaire minimum (sinon sa
---   part reste au garage)
+--   prime d'un employé = le % de son barème appliqué au bénéfice que LUI
+--   génère une fois rentable : (son bénéfice − son salaire minimum), moins
+--   l'impôt au taux effectif du garage (impôt ÷ bénéfice imposable).
+--   Pas de prime s'il n'a pas rapporté plus que son salaire minimum.
+--   Garde-fou : le total des primes ne dépasse jamais le reste après impôt
+--   du garage (réduction proportionnelle), et vaut 0 si ce reste est négatif.
 create or replace function public.calcul_semaine(p_semaine bigint)
 returns jsonb
 language plpgsql
@@ -528,6 +538,7 @@ declare
   v_impot numeric;
   v_reste numeric;
   v_primes numeric;
+  v_taux numeric;
 begin
   select * into s from public.semaines where id = p_semaine;
 
@@ -573,12 +584,14 @@ begin
   v_impot := public.impot(v_imposable);
   v_reste := v_imposable - v_impot;
 
+  -- Taux d'impôt effectif du garage, appliqué au bénéfice net de chaque employé.
+  v_taux := case when v_imposable > 0 then v_impot / v_imposable else 0 end;
+
   select coalesce(jsonb_agg(x || jsonb_build_object('prime',
-           case when v_reste > 0 and v_benef > 0
-                     -- Pas de prime tant que l'employé n'a pas rapporté plus
-                     -- que son salaire minimum.
+           case when v_reste > 0
                      and (x ->> 'benefice')::numeric > (x ->> 'salaire_min')::numeric
-                then round(v_reste * (x ->> 'benefice')::numeric / v_benef * (x ->> 'prime_pct')::numeric / 100)
+                then round(((x ->> 'benefice')::numeric - (x ->> 'salaire_min')::numeric)
+                           * (1 - v_taux) * (x ->> 'prime_pct')::numeric / 100)
                 else 0 end)
            order by (x ->> 'benefice')::numeric desc, x ->> 'nom'), '[]'::jsonb)
     into v_emp
@@ -586,6 +599,17 @@ begin
 
   select coalesce(sum((x ->> 'prime')::numeric), 0) into v_primes
   from jsonb_array_elements(v_emp) x;
+
+  -- Garde-fou : les primes ne mettent jamais le garage en négatif.
+  if v_primes > v_reste and v_primes > 0 then
+    select coalesce(jsonb_agg(x || jsonb_build_object('prime',
+             floor((x ->> 'prime')::numeric * v_reste / v_primes))
+             order by (x ->> 'benefice')::numeric desc, x ->> 'nom'), '[]'::jsonb)
+      into v_emp
+    from jsonb_array_elements(v_emp) x;
+    select coalesce(sum((x ->> 'prime')::numeric), 0) into v_primes
+    from jsonb_array_elements(v_emp) x;
+  end if;
 
   return jsonb_build_object(
     'semaine_id', p_semaine, 'debut', s.debut, 'fin', s.fin,

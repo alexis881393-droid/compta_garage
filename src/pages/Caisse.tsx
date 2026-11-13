@@ -133,35 +133,6 @@ export default function Caisse() {
         </section>
 
         <section className="panneau">
-          <h2>Custom</h2>
-          <p className="aide">Commission du garage : {commissionPct} % du prix d'usine.</p>
-          <label>
-            Prix d'usine (donné par le script)
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              step={1}
-              value={saisieUsine}
-              onChange={(e) => setSaisieUsine(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && ajouterCustom()}
-              placeholder="0"
-            />
-          </label>
-          <dl className="resume">
-            <dt>Bénéfice à facturer</dt>
-            <dd>{dollars(Math.round((prixUsine * commissionPct) / 100))}</dd>
-          </dl>
-          <div className="actions">
-            <button type="button" onClick={ajouterCustom} disabled={prixUsine === 0}>
-              Ajouter au ticket
-            </button>
-          </div>
-        </section>
-      </div>
-
-      <div className="pile">
-        <section className="panneau">
           <h2>Ticket de caisse</h2>
           {lignes.length === 0 ? (
             <p className="aide">Ticket vide.</p>
@@ -244,6 +215,35 @@ export default function Caisse() {
           {message && (
             <p className={`notice ${message.ok ? 'succes' : 'erreur'}`}>{message.texte}</p>
           )}
+        </section>
+      </div>
+
+      <div className="pile">
+        <section className="panneau">
+          <h2>Custom</h2>
+          <p className="aide">Commission du garage : {commissionPct} % du prix d'usine.</p>
+          <label>
+            Prix d'usine (donné par le script)
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              step={1}
+              value={saisieUsine}
+              onChange={(e) => setSaisieUsine(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && ajouterCustom()}
+              placeholder="0"
+            />
+          </label>
+          <dl className="resume">
+            <dt>Bénéfice à facturer</dt>
+            <dd>{dollars(Math.round((prixUsine * commissionPct) / 100))}</dd>
+          </dl>
+          <div className="actions">
+            <button type="button" onClick={ajouterCustom} disabled={prixUsine === 0}>
+              Ajouter au ticket
+            </button>
+          </div>
         </section>
 
         <MonSalaire version={version} />

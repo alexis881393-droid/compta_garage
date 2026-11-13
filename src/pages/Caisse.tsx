@@ -9,15 +9,14 @@ type Ligne =
   | { id: number; type: 'reparation'; cle: string; libelle: string; prix: number; quantite: number }
   | { id: number; type: 'custom'; prixUsine: number }
 
+/** Ligne de l'employé dans le calcul de la semaine (fonction SQL mon_salaire). */
 type Salaire = {
-  score: number
-  nb_ventes: number
   benefice: number
-  salaire_min: number
-  salaire_max: number
+  /** Salaire minimum du barème, toujours versé. */
   salaire: number
-  salaire_pct: number
   prime_pct: number
+  /** Prime provisoire : elle bouge jusqu'à la clôture de la semaine. */
+  prime: number
 }
 
 export default function Caisse() {
@@ -269,17 +268,19 @@ function MonSalaire({ version }: { version: number }) {
 
   if (!s) return null
 
-  // Pas de plafond : le salaire part du minimum garanti et monte avec les ventes.
+  // Salaire minimum garanti + prime calculée automatiquement, sans plafond.
   return (
     <section className="panneau">
       <h2>Mon salaire cette semaine</h2>
       <dl className="resume sans-bordure">
         <dt>Salaire actuel</dt>
-        <dd>{dollars(s.salaire)}</dd>
+        <dd>{dollars(s.salaire + s.prime)}</dd>
       </dl>
       <div className="bornes">
-        <span>Minimum garanti : {dollars(s.salaire_min)}</span>
-        {s.salaire > s.salaire_min && <span>+ {dollars(s.salaire - s.salaire_min)}</span>}
+        <span>Minimum garanti : {dollars(s.salaire)}</span>
+        <span>
+          Prime ({s.prime_pct} %) : + {dollars(s.prime)}
+        </span>
       </div>
     </section>
   )

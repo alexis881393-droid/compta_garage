@@ -6,9 +6,7 @@ type Tarif = { cle: string; libelle: string; prix: number }
 
 const POURCENTAGES = [
   { cle: 'commission_custom_pct', libelle: "Commission du garage sur un custom (% du prix d'usine)" },
-  { cle: 'remise_partenaire_pct', libelle: 'Remise accordée aux partenaires (%)' },
-  { cle: 'salaire_pct_ventes', libelle: "Part du bénéfice au-delà du salaire minimum ajoutée au salaire (%)" },
-]
+  { cle: 'remise_partenaire_pct', libelle: 'Remise accordée aux partenaires (%)' },]
 
 export default function Reglages() {
   const [tarifs, setTarifs] = useState<Tarif[]>([])
@@ -91,8 +89,7 @@ export default function Reglages() {
         </label>
       ))}
       <p className="aide">
-        Les ventes déjà enregistrées ne changent pas. Le pourcentage de salaire s'applique à toute
-        la semaine en cours.
+        Les ventes déjà enregistrées ne changent pas.
       </p>
       <div className="actions">
         <button type="submit" disabled={busy}>

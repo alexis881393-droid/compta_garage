@@ -164,8 +164,6 @@ on conflict (cle) do nothing;
 -- Réglages numériques du garage.
 --   commission_custom_pct  bénéfice du garage sur un custom, en % du prix d'usine
 --   remise_partenaire_pct  réduction appliquée aux tickets d'un partenaire
---   salaire_pct_ventes     part du bénéfice rapporté par l'employé au-delà de son
---                          salaire minimum, qui s'ajoute à ce minimum
 create table if not exists public.reglages (
   cle    text primary key,
   valeur numeric not null check (valeur >= 0)
@@ -174,9 +172,11 @@ create table if not exists public.reglages (
 insert into public.reglages (cle, valeur)
 values
   ('commission_custom_pct', 100),
-  ('remise_partenaire_pct', 20),
-  ('salaire_pct_ventes', 10)
+  ('remise_partenaire_pct', 20)
 on conflict (cle) do nothing;
+
+-- Ancien réglage : le salaire n'a plus de part variable (voir salaire_calcule).
+delete from public.reglages where cle = 'salaire_pct_ventes';
 
 -- Semaines comptables. Une seule est ouverte à la fois (fin nulle). La clôture
 -- fige les résultats dans "resume" et ouvre la semaine suivante.
@@ -372,11 +372,9 @@ as $$
   limit 1;
 $$;
 
--- Salaire de la semaine : minimum de la fourchette + un pourcentage du bénéfice
--- que l'employé a rapporté AU-DELÀ de ce minimum. Il n'y a PAS de maximum : le
--- salaire_max du barème n'est plus appliqué. Tant que l'employé n'a pas
--- remboursé son salaire minimum, il ne touche que ce minimum : la part
--- variable ne peut pas mettre le garage en négatif.
+-- Salaire de la semaine : toujours le minimum du barème, ni plus ni moins.
+-- Tout ce qui s'ajoute passe par la prime (voir calcul_semaine) : le
+-- salaire_max du barème n'est plus utilisé, il n'y a pas de plafond de revenu.
 create or replace function public.salaire_calcule(p_score int, p_benefice numeric)
 returns bigint
 language sql
@@ -384,13 +382,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select (
-    b.salaire_min + round(
-      greatest(coalesce(p_benefice, 0) - b.salaire_min, 0)
-      * coalesce((select valeur from public.reglages where cle = 'salaire_pct_ventes'), 10) / 100
-    )
-  )::bigint
-  from public.bareme_score(p_score) b;
+  select b.salaire_min::bigint from public.bareme_score(p_score) b;
 $$;
 
 -- Impôt progressif par tranches sur le bénéfice imposable.
@@ -493,7 +485,8 @@ begin
 end;
 $$;
 
--- Salaire en cours de l'employé connecté, sur la semaine ouverte.
+-- Ligne de l'employé connecté dans le calcul de la semaine ouverte : salaire
+-- minimum, bénéfice rapporté, pourcentage et montant provisoire de sa prime.
 create or replace function public.mon_salaire()
 returns jsonb
 language sql
@@ -501,32 +494,19 @@ stable
 security definer
 set search_path = ''
 as $$
-  select jsonb_build_object(
-    'score', p.score_social,
-    'nb_ventes', v.nb,
-    'benefice', v.benefice,
-    'salaire_min', b.salaire_min,
-    'salaire_max', b.salaire_max,
-    'salaire', public.salaire_calcule(p.score_social, v.benefice),
-    'salaire_pct', coalesce((select valeur from public.reglages where cle = 'salaire_pct_ventes'), 10),
-    'prime_pct', b.prime_pct
-  )
-  from public.profils p
-  cross join lateral public.bareme_score(p.score_social) b
-  cross join lateral (
-    select count(*) as nb, coalesce(sum(benefice), 0) as benefice
-    from public.ventes
-    where employe_id = p.id and semaine_id = public.semaine_ouverte()
-  ) v
-  where p.id = auth.uid();
+  select e - 'nom_reel'
+  from jsonb_array_elements(public.calcul_semaine(public.semaine_ouverte()) -> 'employes') e
+  where e ->> 'id' = auth.uid()::text;
 $$;
 
 -- Calcul complet d'une semaine. Fonction interne : appelée par resume_semaine
 -- et cloturer_semaine, jamais directement par le site.
 --   bénéfice − (charges saisies + salaires) = bénéfice imposable
 --   bénéfice imposable − impôt = reste
---   prime d'un employé = reste × (sa part du bénéfice) × son % de prime,
---   et 0 s'il n'a pas rapporté plus que son salaire minimum (sa part reste au garage)
+--   salaire d'un employé = le minimum de son barème, toujours
+--   prime d'un employé = reste × (sa part du bénéfice) × le % de son barème,
+--   versée seulement s'il a rapporté plus que son salaire minimum (sinon sa
+--   part reste au garage)
 create or replace function public.calcul_semaine(p_semaine bigint)
 returns jsonb
 language plpgsql

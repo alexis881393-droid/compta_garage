@@ -64,7 +64,7 @@ export default function App() {
       <header>
         <div className="marque">
           <span className="embleme">
-            <img src="/embleme.png" alt="" width={44} height={44} />
+            <img src={`${import.meta.env.BASE_URL}embleme.png`} alt="" width={44} height={44} />
           </span>
           <div>
             <h1>Speedcore Auto</h1>

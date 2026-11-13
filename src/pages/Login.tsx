@@ -51,7 +51,12 @@ export default function Login() {
   return (
     <main className="card connexion">
       <div className="plaque">
-        <img src="/logo.png" alt="Speedcore Auto" width={1128} height={300} />
+        <img
+          src={`${import.meta.env.BASE_URL}logo.png`}
+          alt="Speedcore Auto"
+          width={1128}
+          height={300}
+        />
       </div>
       <h1>{mode === 'connexion' ? 'Connexion' : 'Première connexion'}</h1>
       <form onSubmit={submit}>

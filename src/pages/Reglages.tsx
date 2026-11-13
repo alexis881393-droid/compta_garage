@@ -7,7 +7,7 @@ type Tarif = { cle: string; libelle: string; prix: number }
 const POURCENTAGES = [
   { cle: 'commission_custom_pct', libelle: "Commission du garage sur un custom (% du prix d'usine)" },
   { cle: 'remise_partenaire_pct', libelle: 'Remise accordée aux partenaires (%)' },
-  { cle: 'salaire_pct_ventes', libelle: "Part du bénéfice de l'employé ajoutée à son salaire (%)" },
+  { cle: 'salaire_pct_ventes', libelle: "Part du bénéfice au-delà du salaire minimum ajoutée au salaire (%)" },
 ]
 
 export default function Reglages() {

@@ -124,8 +124,8 @@ on conflict (cle) do nothing;
 -- Réglages numériques du garage.
 --   commission_custom_pct  bénéfice du garage sur un custom, en % du prix d'usine
 --   remise_partenaire_pct  réduction appliquée aux tickets d'un partenaire
---   salaire_pct_ventes     part du bénéfice rapporté par l'employé qui s'ajoute
---                          au minimum de sa fourchette de salaire
+--   salaire_pct_ventes     part du bénéfice rapporté par l'employé au-delà de son
+--                          salaire minimum, qui s'ajoute à ce minimum
 create table if not exists public.reglages (
   cle    text primary key,
   valeur numeric not null check (valeur >= 0)
@@ -325,7 +325,9 @@ as $$
 $$;
 
 -- Salaire de la semaine : minimum de la fourchette + un pourcentage du bénéfice
--- rapporté par l'employé, plafonné au maximum de la fourchette.
+-- que l'employé a rapporté AU-DELÀ de ce minimum, plafonné au maximum de la
+-- fourchette. Tant qu'il n'a pas remboursé son salaire minimum, il ne touche
+-- que ce minimum : la part variable ne peut pas mettre le garage en négatif.
 create or replace function public.salaire_calcule(p_score int, p_benefice numeric)
 returns bigint
 language sql
@@ -336,7 +338,7 @@ as $$
   select least(
     b.salaire_max,
     b.salaire_min + round(
-      greatest(coalesce(p_benefice, 0), 0)
+      greatest(coalesce(p_benefice, 0) - b.salaire_min, 0)
       * coalesce((select valeur from public.reglages where cle = 'salaire_pct_ventes'), 10) / 100
     )
   )::bigint

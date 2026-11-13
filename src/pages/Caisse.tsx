@@ -282,15 +282,16 @@ function MonSalaire({ version }: { version: number }) {
       </div>
       <p className="aide">
         Score social : {entier(s.score)}. Bénéfice rapporté : {dollars(s.benefice)} sur{' '}
-        {s.nb_ventes} ligne{s.nb_ventes > 1 ? 's' : ''}. {s.salaire_pct} % de ce bénéfice s'ajoute au
-        minimum, jusqu'au maximum de la fourchette.
+        {s.nb_ventes} ligne{s.nb_ventes > 1 ? 's' : ''}. Au-delà de votre salaire minimum,{' '}
+        {s.salaire_pct} % du bénéfice rapporté s'ajoute au salaire, jusqu'au maximum de la
+        fourchette.
       </p>
       <p className={`notice ${s.benefice > s.salaire_min ? 'succes' : ''}`}>
         {s.benefice > s.salaire_min
-          ? `Prime débloquée (${s.prime_pct} % de votre part), calculée à la clôture de la semaine.`
-          : `Pas encore de prime : il faut rapporter plus que votre salaire minimum. Encore ${dollars(
+          ? `Salaire minimum remboursé : votre salaire augmente et la prime est débloquée (${s.prime_pct} % de votre part, calculée à la clôture).`
+          : `Salaire minimum pas encore remboursé : ni augmentation ni prime. Encore ${dollars(
               s.salaire_min - s.benefice + 1,
-            )} de bénéfice.`}
+            )} de bénéfice à rapporter.`}
       </p>
     </section>
   )

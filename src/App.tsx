@@ -43,14 +43,14 @@ export default function App() {
   const onglets: { id: Onglet; nom: string; visible: boolean }[] = [
     { id: 'caisse', nom: 'Caisse', visible: peut('ventes.creer') },
     { id: 'compta', nom: 'Ventes', visible: Boolean(profil?.grade) },
+    { id: 'charges', nom: 'Charges', visible: peut('compta.globale') },
     {
       id: 'partenaires',
       nom: 'Partenaires',
       visible: peut('partenaires.gerer') || peut('compta.globale'),
     },
-    { id: 'globale', nom: 'Compta globale', visible: peut('compta.globale') },
     { id: 'employes', nom: 'Résultats employés', visible: peut('compta.globale') },
-    { id: 'charges', nom: 'Charges', visible: peut('compta.globale') },
+    { id: 'globale', nom: 'Compta globale', visible: peut('compta.globale') },
     { id: 'equipe', nom: 'Équipe', visible: peut('equipe.gerer') },
     { id: 'reglages', nom: 'Réglages', visible: peut('reglages.modifier') },
   ]

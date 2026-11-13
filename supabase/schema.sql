@@ -47,7 +47,9 @@ as $$
   );
 $$;
 
--- Crée automatiquement le profil (sans grade) à l'inscription.
+-- Crée automatiquement le profil à l'inscription. Le tout premier compte créé
+-- devient Patron ; les suivants n'ont aucun grade tant que la direction ne leur
+-- en attribue pas un.
 create or replace function public.creer_profil()
 returns trigger
 language plpgsql
@@ -55,8 +57,13 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.profils (id, nom)
-  values (new.id, new.raw_user_meta_data ->> 'nom');
+  insert into public.profils (id, nom, grade_id)
+  values (
+    new.id,
+    new.raw_user_meta_data ->> 'nom',
+    case when not exists (select 1 from public.profils)
+         then (select id from public.grades where nom = 'Patron') end
+  );
   return new;
 end;
 $$;
@@ -89,10 +96,11 @@ values
 on conflict (nom) do update
   set niveau = excluded.niveau, permissions = excluded.permissions;
 
--- Après avoir créé votre propre compte sur le site, donnez-vous le grade Patron :
+-- Le premier compte créé sur le site reçoit le grade Patron (voir creer_profil).
+-- Pour le donner à la main à un autre compte :
 --   update public.profils
 --   set grade_id = (select id from public.grades where nom = 'Patron')
---   where id = (select id from auth.users where email = 'votre@email.fr');
+--   where nom = 'pseudo';
 
 -- ===========================================================================
 -- 2. Tables de la caisse et de la comptabilité

@@ -51,7 +51,7 @@ export default function App() {
         <h1>Compta Garage</h1>
         <div className="compte">
           <span>
-            <strong>{profil?.nom ?? session.user.email}</strong>
+            <strong>{profil?.nom ?? session.user.email?.split('@')[0]}</strong>
             {profil?.grade && ` · ${profil.grade.nom}`}
           </span>
           <button type="button" className="secondaire" onClick={signOut}>

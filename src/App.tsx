@@ -67,7 +67,10 @@ export default function App() {
             <img src={`${import.meta.env.BASE_URL}embleme.png`} alt="" width={44} height={44} />
           </span>
           <div>
-            <h1>Speedcore Auto</h1>
+            {/* Initiales en bronze, comme sur le logo */}
+            <h1 aria-label="Speedcore Auto">
+              <b>S</b>peedcore <b>A</b>uto
+            </h1>
             <p>Comptabilité du garage</p>
           </div>
         </div>

@@ -9,9 +9,9 @@
   color-scheme: dark;
 
   /* Couleurs du logo */
-  --bleu: #2f5fe0;
-  --bleu-vif: #6f97ff;
-  --bleu-profond: #1a3da8;
+  --bleu: #2149b8;
+  --bleu-vif: #7396f5;
+  --bleu-profond: #16338a;
   --bronze: #c99b63;
   --bronze-clair: #edcb97;
   --bronze-profond: #8a6035;
@@ -28,14 +28,14 @@
      derrière le texte, seul le reflet de bord rappelle le verre */
   /* Panneaux 100 % opaques (aucune transparence, aucun flou) : seul le
      dégradé et le reflet de bord gardent l'aspect verre. */
-  --verre: linear-gradient(160deg, #2c3f8c, #1c2b66 45%, #18245a);
-  --verre-bord: #5a6fb8;
+  --verre: linear-gradient(160deg, #1f43a8, #17358c 45%, #132b74);
+  --verre-bord: #4f72d6;
   --verre-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
     inset 1px 0 0 rgba(255, 255, 255, 0.06);
   --ombre: 0 24px 60px -24px rgba(1, 4, 22, 0.85), 0 2px 8px rgba(1, 4, 22, 0.25);
   --flou: none;
-  --filet: #46599e;
-  --creux: #0b1238;
+  --filet: #3558bd;
+  --creux: #0a1640;
 
   /* Rayons : plus doux sur les conteneurs, plus serrés à l'intérieur */
   --r-panneau: 28px;
@@ -367,7 +367,7 @@ select {
   width: 100%;
   min-height: 48px;
   padding: 10px 14px;
-  border: 1px solid #7183c6;
+  border: 1px solid #6f8fe8;
   border-radius: var(--r-champ);
   background: var(--creux);
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -430,7 +430,7 @@ button {
   padding: 10px 20px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--r-champ);
-  background: linear-gradient(170deg, #5c88ff, var(--bleu) 45%, var(--bleu-profond));
+  background: linear-gradient(170deg, #5f88f7, #3562dc 45%, var(--bleu));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 22px -10px rgba(47, 95, 224, 0.95);
   color: #fff;
   font: inherit;
@@ -463,8 +463,8 @@ button:disabled {
 
 /* Verre neutre : actions secondaires */
 button.secondaire {
-  background: linear-gradient(170deg, #5266a8, #3c4f90);
-  border-color: #8697d6;
+  background: linear-gradient(170deg, #3a5cc4, #2a48a6);
+  border-color: #86a2f0;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   color: #fff;
   font-weight: 600;
@@ -516,14 +516,14 @@ button.onglet {
 }
 
 button.onglet:hover:not(.actif) {
-  background: #34478f;
+  background: #2748a8;
   color: var(--texte);
   filter: none;
 }
 
 button.onglet.actif {
-  background: linear-gradient(170deg, #6f86d6, #4a61b4);
-  border-color: #a9b8ee;
+  background: linear-gradient(170deg, #5b82f2, #2f58d0);
+  border-color: #b3c6fb;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 18px -10px rgba(47, 95, 224, 0.9);
   color: #fff;
   font-weight: 600;
@@ -569,7 +569,7 @@ button.gros {
   padding: 16px 16px 14px;
   border-radius: var(--r-bloc);
   border-color: rgba(255, 255, 255, 0.4);
-  background: linear-gradient(165deg, #5580f0, var(--bleu) 50%, var(--bleu-profond));
+  background: linear-gradient(165deg, #5f88f7, #3562dc 50%, #2a52c8);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 14px 26px -14px rgba(47, 95, 224, 1);
   text-align: left;
   font-size: 1.02rem;
@@ -692,7 +692,7 @@ button.gros strong {
   padding: 12px 16px;
   border: 1px solid var(--verre-bord);
   border-radius: var(--r-champ);
-  background: #2f4189;
+  background: #2a4cb4;
   font-size: 0.98rem;
   font-weight: 500;
 }
@@ -821,7 +821,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #26377a;
+  background: #1d3d9c;
 }
 
 tbody tr:last-child td {
@@ -928,7 +928,7 @@ details .actions {
 
 /* Verre dans le verre : on allège les panneaux imbriqués (archives) */
 details .panneau {
-  background: #223272;
+  background: #1a3a94;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -969,4 +969,135 @@ details .panneau {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ==========================================================================
+   Détails dorés : le bronze du logo en filets, liserés et repères
+   ========================================================================== */
+
+:root {
+  --or: linear-gradient(100deg, #fff0cf, var(--bronze-clair) 30%, var(--bronze) 65%, var(--bronze-profond));
+}
+
+/* Liseré doré en haut de chaque panneau */
+.panneau::before,
+.card::before,
+.tuile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 30px;
+  right: 30px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, transparent, var(--bronze-clair) 15%, var(--bronze) 55%, transparent);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.card,
+.tuile {
+  position: relative;
+}
+
+details .panneau::before {
+  display: none;
+}
+
+/* Repère doré incliné devant chaque titre, repris des bandes du logo */
+.panneau > h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.panneau > h2::before {
+  content: '';
+  flex: none;
+  width: 18px;
+  height: 14px;
+  background: var(--or);
+  clip-path: polygon(38% 0, 100% 0, 62% 100%, 0 100%);
+}
+
+/* En-tête */
+.marque h1 b {
+  font-weight: 700;
+  background: var(--or);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.embleme {
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 2px var(--bronze), 0 10px 24px -8px rgba(201, 155, 99, 0.7);
+}
+
+.compte {
+  border-color: var(--bronze);
+}
+
+nav {
+  border-color: var(--bronze-profond);
+}
+
+button.onglet.actif {
+  border-color: var(--bronze-clair);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 0 1px rgba(237, 203, 151, 0.35),
+    0 8px 18px -10px rgba(201, 155, 99, 0.9);
+}
+
+/* Formulaires : l'or marque le champ actif */
+input:focus-visible,
+select:focus-visible {
+  border-color: var(--bronze-clair);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(237, 203, 151, 0.28);
+}
+
+button:focus-visible,
+details > summary:focus-visible {
+  outline-color: var(--bronze-clair);
+}
+
+/* Touches de réparation : filet doré */
+button.gros {
+  border-color: var(--bronze);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -3px 0 var(--bronze), 0 14px 26px -14px rgba(8, 18, 60, 0.9);
+}
+
+/* Tableaux : en-tête souligné d'or, montants clés en bronze */
+thead th {
+  border-bottom: 1px solid var(--bronze);
+  color: var(--bronze-clair);
+}
+
+tfoot td {
+  border-top: 1px solid var(--bronze);
+}
+
+td.num strong,
+tfoot td.num {
+  color: var(--bronze-clair);
+}
+
+/* Séparateurs des totaux */
+.resume {
+  border-top-color: var(--bronze-profond);
+}
+
+.cascade .fort {
+  border-top-color: var(--bronze-profond);
+}
+
+.ticket {
+  border: 1px solid var(--bronze-profond);
+}
+
+.jauge {
+  border: 1px solid var(--bronze-profond);
+  height: 16px;
+}
+
+.plaque {
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 2px var(--bronze), 0 14px 30px -14px rgba(201, 155, 99, 0.75);
 }

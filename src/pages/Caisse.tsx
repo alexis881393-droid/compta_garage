@@ -273,9 +273,11 @@ export default function Caisse() {
   )
 }
 
-const QUANTITE_MAX = 100
+// Pas de limite métier : ce plafond est un garde-fou contre une faute de frappe
+// (même valeur que dans la fonction SQL enregistrer_ticket).
+const QUANTITE_MAX = 1_000_000
 
-/** Sélecteur de quantité du ticket : − / saisie directe / +, de 1 à 100. */
+/** Sélecteur de quantité du ticket : − / saisie directe / +, à partir de 1. */
 function Quantite({
   valeur,
   onChange,

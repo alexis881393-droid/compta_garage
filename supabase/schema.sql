@@ -519,7 +519,8 @@ begin
   for l in select value from jsonb_array_elements(p_lignes) loop
     if l ->> 'type' = 'reparation' then
       q := coalesce((l ->> 'quantite')::int, 1);
-      if q < 1 or q > 100 then
+      -- Pas de limite métier : 1 000 000 est seulement un garde-fou contre une faute de frappe.
+      if q < 1 or q > 1000000 then
         raise exception 'Quantité invalide';
       end if;
       select * into t from public.tarifs where cle = l ->> 'cle';

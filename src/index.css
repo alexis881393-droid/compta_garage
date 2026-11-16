@@ -1179,7 +1179,7 @@ table.acces td:first-child {
 }
 
 .quantite input {
-  width: 64px;
+  width: 96px;
   min-height: 40px;
   padding: 4px 6px;
   border-radius: 12px;

@@ -37,6 +37,10 @@ export type Resume = {
   impot: number
   reste: number
   primes: number
+  /** Reste après primes, avant prélèvement de la holding. Absent des anciennes archives. */
+  apres_primes?: number
+  holding_pct?: number
+  holding?: number
   solde: number
   employes: EmployeResume[]
   charges: { id: number; libelle: string; montant: number }[]

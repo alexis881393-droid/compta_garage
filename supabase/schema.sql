@@ -178,6 +178,7 @@ on conflict (cle) do nothing;
 
 -- Réglages numériques du garage.
 --   commission_custom_pct  bénéfice du garage sur un custom, en % du prix d'usine
+--   holding_pct            part du reste du garage (après primes) versée à la holding
 create table if not exists public.reglages (
   cle    text primary key,
   valeur numeric not null check (valeur >= 0)
@@ -185,7 +186,8 @@ create table if not exists public.reglages (
 
 insert into public.reglages (cle, valeur)
 values
-  ('commission_custom_pct', 100)
+  ('commission_custom_pct', 100),
+  ('holding_pct', 10)
 on conflict (cle) do nothing;
 
 -- Ancien réglage : le salaire n'a plus de part variable (voir salaire_calcule).
@@ -542,6 +544,9 @@ $$;
 --   bénéfice − (charges saisies + salaires) = bénéfice imposable
 --   bénéfice imposable − impôt = reste
 --   salaire d'un employé = le minimum de son barème, toujours
+--   reste après primes = reste après impôt − primes
+--   holding = holding_pct % du reste après primes (0 si ce reste n'est pas positif)
+--   reste au garage = reste après primes − holding
 --   prime d'un employé = le % de son barème appliqué au bénéfice que LUI
 --   génère une fois rentable : (son bénéfice − son salaire minimum), moins
 --   l'impôt au taux effectif du garage (impôt ÷ bénéfice imposable).
@@ -571,6 +576,9 @@ declare
   v_reste numeric;
   v_primes numeric;
   v_taux numeric;
+  v_holding_pct numeric;
+  v_apres_primes numeric;
+  v_holding numeric;
 begin
   select * into s from public.semaines where id = p_semaine;
 
@@ -644,6 +652,13 @@ begin
     from jsonb_array_elements(v_emp) x;
   end if;
 
+  -- Holding : prélevée sur ce qui reste au garage une fois les primes versées.
+  select least(greatest(coalesce(valeur, 10), 0), 100) into v_holding_pct
+  from public.reglages where cle = 'holding_pct';
+  v_holding_pct := coalesce(v_holding_pct, 10);
+  v_apres_primes := v_reste - v_primes;
+  v_holding := case when v_apres_primes > 0 then round(v_apres_primes * v_holding_pct / 100) else 0 end;
+
   return jsonb_build_object(
     'semaine_id', p_semaine, 'debut', s.debut, 'fin', s.fin,
     'benefice', v_benef, 'benefice_reparations', v_repa, 'benefice_tombola', v_tombola,
@@ -651,7 +666,9 @@ begin
     'prix_usine', v_usine,
     'charges_saisies', v_charges_saisies, 'salaires', v_salaires,
     'imposable', v_imposable, 'impot', v_impot, 'reste', v_reste,
-    'primes', v_primes, 'solde', v_reste - v_primes,
+    'primes', v_primes, 'apres_primes', v_apres_primes,
+    'holding_pct', v_holding_pct, 'holding', v_holding,
+    'solde', v_apres_primes - v_holding,
     'employes', v_emp, 'charges', v_charges
   );
 end;

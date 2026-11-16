@@ -31,6 +31,14 @@ export function CascadeCompta({ resume: r }: { resume: Resume }) {
         <dd className="fort">{dollars(r.reste)}</dd>
         <dt>− Primes</dt>
         <dd>{dollars(r.primes)}</dd>
+        {r.holding !== undefined && r.apres_primes !== undefined && (
+          <>
+            <dt className="fort">Reste après primes</dt>
+            <dd className="fort">{dollars(r.apres_primes)}</dd>
+            <dt>− Holding ({Number(r.holding_pct ?? 0)} %)</dt>
+            <dd>{dollars(r.holding)}</dd>
+          </>
+        )}
         <dt className="fort">Reste au garage</dt>
         <dd className="fort">{dollars(r.solde)}</dd>
       </dl>

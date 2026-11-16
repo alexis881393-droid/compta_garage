@@ -9,6 +9,12 @@ export function CascadeCompta({ resume: r }: { resume: Resume }) {
       <dl className="cascade">
         <dt>Bénéfice réparations</dt>
         <dd>{dollars(r.benefice_reparations)}</dd>
+        {(r.benefice_tombola ?? 0) > 0 && (
+          <>
+            <dt>Tickets de tombola</dt>
+            <dd>{dollars(r.benefice_tombola ?? 0)}</dd>
+          </>
+        )}
         <dt>Commissions custom</dt>
         <dd>{dollars(r.benefice_customs)}</dd>
         <dt className="fort">Bénéfice</dt>

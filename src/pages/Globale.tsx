@@ -11,7 +11,7 @@ type VenteArchive = {
   id: number
   created_at: string
   ticket_id: number | null
-  type: 'reparation' | 'custom'
+  type: 'reparation' | 'custom' | 'tombola'
   libelle: string
   quantite: number
   prix_usine: number

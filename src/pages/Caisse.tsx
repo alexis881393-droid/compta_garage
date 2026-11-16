@@ -88,6 +88,11 @@ export default function Caisse() {
 
   const retirer = (id: number) => setLignes((ls) => ls.filter((l) => l.id !== id))
 
+  const changerQuantite = (id: number, quantite: number) =>
+    setLignes((ls) =>
+      ls.map((l) => (l.id === id && l.type === 'reparation' ? { ...l, quantite } : l)),
+    )
+
   const valider = async () => {
     if (!supabase || lignes.length === 0) return
     setBusy(true)
@@ -119,8 +124,8 @@ export default function Caisse() {
     <div className="colonnes">
       <div className="pile">
         <section className="panneau">
-          <h2>Réparations</h2>
-          <p className="aide">Un clic ajoute une réparation au ticket.</p>
+          <h2>Réparations et tombola</h2>
+          <p className="aide">Un clic ajoute l'article au ticket, la quantité se règle dans le ticket.</p>
           <div className="boutons-reparation">
             {tarifs.map((t) => (
               <button key={t.cle} type="button" className="gros" onClick={() => ajouterReparation(t)}>
@@ -136,14 +141,23 @@ export default function Caisse() {
           {lignes.length === 0 ? (
             <p className="aide">Ticket vide.</p>
           ) : (
-            <ul className="ticket">
+            <ul className="ticket avec-quantite">
               {lignes.map((l) => (
                 <li key={l.id}>
                   <span>
                     {l.type === 'reparation'
-                      ? `${l.libelle} × ${l.quantite}`
+                      ? l.libelle
                       : `Custom (usine ${dollars(l.prixUsine)})`}
                   </span>
+                  {l.type === 'reparation' ? (
+                    <Quantite
+                      valeur={l.quantite}
+                      onChange={(q) => changerQuantite(l.id, q)}
+                      nom={l.libelle}
+                    />
+                  ) : (
+                    <span />
+                  )}
                   <strong>{dollars(benefice(l))}</strong>
                   <button
                     type="button"
@@ -252,6 +266,62 @@ export default function Caisse() {
 
         <MonSalaire version={version} />
       </div>
+    </div>
+  )
+}
+
+const QUANTITE_MAX = 100
+
+/** Sélecteur de quantité du ticket : − / saisie directe / +, de 1 à 100. */
+function Quantite({
+  valeur,
+  onChange,
+  nom,
+}: {
+  valeur: number
+  onChange: (q: number) => void
+  nom: string
+}) {
+  // Texte en cours de saisie : permet d'effacer le champ avant de retaper un nombre.
+  const [saisie, setSaisie] = useState<string | null>(null)
+  const borne = (n: number) => Math.min(QUANTITE_MAX, Math.max(1, Math.floor(n)))
+
+  return (
+    <div className="quantite" role="group" aria-label={`Quantité de ${nom}`}>
+      <button
+        type="button"
+        className="secondaire rond petit"
+        onClick={() => onChange(borne(valeur - 1))}
+        disabled={valeur <= 1}
+        aria-label="Une de moins"
+      >
+        −
+      </button>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={1}
+        max={QUANTITE_MAX}
+        step={1}
+        value={saisie ?? valeur}
+        onChange={(e) => {
+          setSaisie(e.target.value)
+          const n = Number(e.target.value)
+          if (e.target.value !== '' && Number.isFinite(n) && n >= 1) onChange(borne(n))
+        }}
+        onFocus={(e) => e.target.select()}
+        onBlur={() => setSaisie(null)}
+        aria-label={`Quantité de ${nom}`}
+      />
+      <button
+        type="button"
+        className="secondaire rond petit"
+        onClick={() => onChange(borne(valeur + 1))}
+        disabled={valeur >= QUANTITE_MAX}
+        aria-label="Une de plus"
+      >
+        +
+      </button>
     </div>
   )
 }

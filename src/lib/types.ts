@@ -26,6 +26,8 @@ export type Resume = {
   fin: string | null
   benefice: number
   benefice_reparations: number
+  /** Absent des archives antérieures aux tickets de tombola. */
+  benefice_tombola?: number
   benefice_customs: number
   prix_usine: number
   charges_saisies: number

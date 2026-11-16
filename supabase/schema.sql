@@ -166,6 +166,16 @@ values
   ('moteur',      'Réparation moteur',      300, 3)
 on conflict (cle) do nothing;
 
+-- Catégorie d'un tarif : 'reparation' ou 'tombola'. Les deux sont à prix fixe et
+-- 100 % bénéfice pour le garage, mais la compta les sépare.
+alter table public.tarifs
+  add column if not exists type text not null default 'reparation'
+  check (type in ('reparation', 'tombola'));
+
+insert into public.tarifs (cle, libelle, prix, ordre, type)
+values ('tombola', 'Ticket de tombola', 300, 4, 'tombola')
+on conflict (cle) do nothing;
+
 -- Réglages numériques du garage.
 --   commission_custom_pct  bénéfice du garage sur un custom, en % du prix d'usine
 --   remise_partenaire_pct  réduction appliquée aux tickets d'un partenaire
@@ -241,6 +251,11 @@ alter table public.ventes
   add column if not exists facture_le    timestamptz;
 
 update public.ventes set semaine_id = public.semaine_ouverte() where semaine_id is null;
+
+-- Le type d'une vente accepte aussi 'tombola'.
+alter table public.ventes drop constraint if exists ventes_type_check;
+alter table public.ventes
+  add constraint ventes_type_check check (type in ('reparation', 'custom', 'tombola'));
 
 create index if not exists ventes_created_at_idx on public.ventes (created_at desc);
 create index if not exists ventes_semaine_idx on public.ventes (semaine_id);
@@ -470,7 +485,7 @@ begin
       insert into public.ventes
         (employe_id, semaine_id, ticket_id, partenaire_id, type, libelle, quantite, benefice, remise_pct)
       values
-        (auth.uid(), sid, tid, p_partenaire, 'reparation', t.libelle, q,
+        (auth.uid(), sid, tid, p_partenaire, t.type, t.libelle, q,
          round(t.prix * q * (100 - remise) / 100), remise);
     elsif l ->> 'type' = 'custom' then
       pu := (l ->> 'prix_usine')::bigint;
@@ -535,6 +550,7 @@ declare
   v_charges jsonb;
   v_benef numeric;
   v_repa numeric;
+  v_tombola numeric;
   v_custom numeric;
   v_usine numeric;
   v_charges_saisies numeric;
@@ -549,9 +565,10 @@ begin
 
   select coalesce(sum(benefice), 0),
          coalesce(sum(benefice) filter (where type = 'reparation'), 0),
+         coalesce(sum(benefice) filter (where type = 'tombola'), 0),
          coalesce(sum(benefice) filter (where type = 'custom'), 0),
          coalesce(sum(prix_usine), 0)
-    into v_benef, v_repa, v_custom, v_usine
+    into v_benef, v_repa, v_tombola, v_custom, v_usine
   from public.ventes where semaine_id = p_semaine;
 
   select coalesce(sum(montant), 0),
@@ -618,7 +635,8 @@ begin
 
   return jsonb_build_object(
     'semaine_id', p_semaine, 'debut', s.debut, 'fin', s.fin,
-    'benefice', v_benef, 'benefice_reparations', v_repa, 'benefice_customs', v_custom,
+    'benefice', v_benef, 'benefice_reparations', v_repa, 'benefice_tombola', v_tombola,
+    'benefice_customs', v_custom,
     'prix_usine', v_usine,
     'charges_saisies', v_charges_saisies, 'salaires', v_salaires,
     'imposable', v_imposable, 'impot', v_impot, 'reste', v_reste,

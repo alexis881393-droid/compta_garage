@@ -1140,3 +1140,59 @@ table.acces td:first-child {
   white-space: normal;
   min-width: 230px;
 }
+
+/* Ticket de caisse : une ligne = article, quantité réglable, prix, retrait */
+.ticket.avec-quantite li {
+  grid-template-columns: minmax(0, 1fr) auto 92px auto;
+}
+
+.ticket.avec-quantite li > strong {
+  text-align: right;
+}
+
+.quantite {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quantite button {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 12px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.quantite input {
+  width: 64px;
+  min-height: 40px;
+  padding: 4px 6px;
+  border-radius: 12px;
+  border-color: var(--bronze);
+  text-align: center;
+  font-family: var(--titre);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--bronze-clair);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.quantite input::-webkit-inner-spin-button,
+.quantite input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .ticket.avec-quantite li {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .ticket.avec-quantite li > :first-child {
+    grid-column: 1 / -1;
+  }
+}

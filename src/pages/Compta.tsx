@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthProvider'
 type Vente = {
   id: number
   created_at: string
-  type: 'reparation' | 'custom'
+  type: 'reparation' | 'custom' | 'tombola'
   libelle: string
   quantite: number
   prix_usine: number
@@ -60,6 +60,7 @@ export default function Compta() {
 
   const total = (type: string) => totaux.find((t) => t.type === type)
   const beneficeRepa = Number(total('reparation')?.benefice ?? 0)
+  const beneficeTombola = Number(total('tombola')?.benefice ?? 0)
   const beneficeCustom = Number(total('custom')?.benefice ?? 0)
 
   return (
@@ -71,11 +72,15 @@ export default function Compta() {
       <div className="tuiles">
         <div className="tuile">
           <span>Bénéfice total</span>
-          <strong>{dollars(beneficeRepa + beneficeCustom)}</strong>
+          <strong>{dollars(beneficeRepa + beneficeTombola + beneficeCustom)}</strong>
         </div>
         <div className="tuile">
           <span>Réparations ({total('reparation')?.nombre ?? 0} lignes)</span>
           <strong>{dollars(beneficeRepa)}</strong>
+        </div>
+        <div className="tuile">
+          <span>Tombola ({total('tombola')?.nombre ?? 0} lignes)</span>
+          <strong>{dollars(beneficeTombola)}</strong>
         </div>
         <div className="tuile">
           <span>Commissions custom ({total('custom')?.nombre ?? 0})</span>

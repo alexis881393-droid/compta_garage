@@ -23,7 +23,6 @@ export default function Caisse() {
   const [tarifs, setTarifs] = useState<Tarif[]>([])
   const [partenaires, setPartenaires] = useState<Partenaire[]>([])
   const [commissionPct, setCommissionPct] = useState(100)
-  const [remisePct, setRemisePct] = useState(20)
   const [erreur, setErreur] = useState<string | null>(null)
 
   const [lignes, setLignes] = useState<Ligne[]>([])
@@ -40,7 +39,11 @@ export default function Caisse() {
     Promise.all([
       supabase.from('tarifs').select('cle, libelle, prix').order('ordre'),
       supabase.from('reglages').select('cle, valeur'),
-      supabase.from('partenaires').select('id, nom, actif').eq('actif', true).order('nom'),
+      supabase
+        .from('partenaires')
+        .select('id, nom, actif, remise_pct')
+        .eq('actif', true)
+        .order('nom'),
     ]).then(([t, r, p]) => {
       const err = t.error ?? r.error ?? p.error
       if (err) setErreur(err.message)
@@ -48,7 +51,6 @@ export default function Caisse() {
       setPartenaires((p.data as Partenaire[] | null) ?? [])
       for (const reglage of r.data ?? []) {
         if (reglage.cle === 'commission_custom_pct') setCommissionPct(Number(reglage.valeur))
-        if (reglage.cle === 'remise_partenaire_pct') setRemisePct(Number(reglage.valeur))
       }
     })
   }, [])
@@ -56,7 +58,8 @@ export default function Caisse() {
   if (erreur) return <p className="notice erreur">Chargement impossible : {erreur}</p>
 
   const partenaire = partenaires.find((p) => String(p.id) === partenaireId) ?? null
-  const remise = partenaire ? Math.min(remisePct, 100) : 0
+  // Remise propre au partenaire choisi (réglée dans l'onglet Partenaires).
+  const remise = partenaire ? Math.min(Number(partenaire.remise_pct), 100) : 0
 
   // Mêmes calculs que la fonction SQL enregistrer_ticket, qui fait foi.
   const beneficeBrut = (l: Ligne) =>
@@ -178,7 +181,7 @@ export default function Caisse() {
               <option value="">Aucun (client normal)</option>
               {partenaires.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.nom}
+                  {p.nom} (−{Number(p.remise_pct)} %)
                 </option>
               ))}
             </select>

@@ -8,7 +8,6 @@ type Tarif = { cle: string; libelle: string; prix: number }
 
 const POURCENTAGES = [
   { cle: 'commission_custom_pct', libelle: "Commission du garage sur un custom (% du prix d'usine)" },
-  { cle: 'remise_partenaire_pct', libelle: 'Remise accordée aux partenaires (%)' },
 ]
 
 export default function Reglages() {
@@ -85,7 +84,6 @@ export default function Reglages() {
           <input
             type="number"
             min={0}
-            max={p.cle === 'remise_partenaire_pct' ? 100 : undefined}
             step="any"
             required
             value={valeurs[p.cle] ?? ''}

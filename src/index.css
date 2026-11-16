@@ -1207,3 +1207,49 @@ table.acces td:first-child {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Onglet Partenaires : remise réglable pour chaque partenaire */
+.ticket.liste-partenaires li {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.remise-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remise-edit input {
+  width: 92px;
+  min-height: 40px;
+  padding: 4px 8px;
+  border-color: var(--bronze);
+  border-radius: 12px;
+  text-align: center;
+  font-family: var(--titre);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--bronze-clair);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.remise-edit input::-webkit-inner-spin-button,
+.remise-edit input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.ligne-form label.champ-court {
+  flex: 0 1 130px;
+}
+
+@media (max-width: 640px) {
+  .ticket.liste-partenaires li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ticket.liste-partenaires li > :first-child {
+    grid-column: 1 / -1;
+  }
+}

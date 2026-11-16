@@ -178,7 +178,6 @@ on conflict (cle) do nothing;
 
 -- Réglages numériques du garage.
 --   commission_custom_pct  bénéfice du garage sur un custom, en % du prix d'usine
---   remise_partenaire_pct  réduction appliquée aux tickets d'un partenaire
 create table if not exists public.reglages (
   cle    text primary key,
   valeur numeric not null check (valeur >= 0)
@@ -186,8 +185,7 @@ create table if not exists public.reglages (
 
 insert into public.reglages (cle, valeur)
 values
-  ('commission_custom_pct', 100),
-  ('remise_partenaire_pct', 20)
+  ('commission_custom_pct', 100)
 on conflict (cle) do nothing;
 
 -- Ancien réglage : le salaire n'a plus de part variable (voir salaire_calcule).
@@ -225,6 +223,20 @@ create table if not exists public.partenaires (
   actif      boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+-- Remise propre à chaque partenaire, en % (0 à 100). Elle est copiée sur chaque
+-- vente au moment du ticket : changer la remise ne modifie pas les ventes passées.
+-- Migration : l'ancien réglage global devient la remise des partenaires existants.
+alter table public.partenaires add column if not exists remise_pct numeric;
+update public.partenaires
+set remise_pct = coalesce((select valeur from public.reglages where cle = 'remise_partenaire_pct'), 20)
+where remise_pct is null;
+alter table public.partenaires alter column remise_pct set default 20;
+alter table public.partenaires alter column remise_pct set not null;
+alter table public.partenaires drop constraint if exists partenaires_remise_pct_check;
+alter table public.partenaires
+  add constraint partenaires_remise_pct_check check (remise_pct >= 0 and remise_pct <= 100);
+delete from public.reglages where cle = 'remise_partenaire_pct';
 
 -- Journal des ventes, une ligne par ligne de ticket. "benefice" est ce que le
 -- garage gagne réellement, remise déduite : le prix complet pour une réparation,
@@ -464,8 +476,7 @@ begin
     if not found then
       raise exception 'Partenaire inconnu ou désactivé';
     end if;
-    select least(valeur, 100) into remise from public.reglages where cle = 'remise_partenaire_pct';
-    remise := coalesce(remise, 20);
+    select remise_pct into remise from public.partenaires where id = p_partenaire;
   end if;
   select valeur into commission from public.reglages where cle = 'commission_custom_pct';
   commission := coalesce(commission, 100);

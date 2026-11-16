@@ -1,6 +1,7 @@
 export type Message = { ok: boolean; texte: string }
 
-export type Partenaire = { id: number; nom: string; actif: boolean }
+/** remise_pct : réduction accordée à ce partenaire sur ses tickets, en %. */
+export type Partenaire = { id: number; nom: string; actif: boolean; remise_pct: number }
 
 export type EmployeResume = {
   id: string

@@ -21,13 +21,16 @@ export default function Partenaires() {
   const [partenaires, setPartenaires] = useState<Partenaire[]>([])
   const [lignes, setLignes] = useState<LigneFacture[]>([])
   const [nom, setNom] = useState('')
+  const [remiseNouveau, setRemiseNouveau] = useState('20')
+  // Remises en cours de saisie, par partenaire, pas encore enregistrées.
+  const [brouillons, setBrouillons] = useState<Record<number, string>>({})
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<Message | null>(null)
 
   const charger = useCallback(async () => {
     if (!supabase) return
     const [p, v] = await Promise.all([
-      supabase.from('partenaires').select('id, nom, actif').order('nom'),
+      supabase.from('partenaires').select('id, nom, actif, remise_pct').order('nom'),
       supabase
         .from('ventes')
         .select(
@@ -51,7 +54,9 @@ export default function Partenaires() {
     e.preventDefault()
     if (!supabase) return
     setBusy(true)
-    const { error } = await supabase.from('partenaires').insert({ nom: nom.trim() })
+    const { error } = await supabase
+      .from('partenaires')
+      .insert({ nom: nom.trim(), remise_pct: Number(remiseNouveau) })
     setBusy(false)
     if (error) {
       setMessage({
@@ -62,6 +67,35 @@ export default function Partenaires() {
     }
     setMessage(null)
     setNom('')
+    setRemiseNouveau('20')
+    charger()
+  }
+
+  const enregistrerRemise = async (p: Partenaire) => {
+    if (!supabase) return
+    const valeur = Number(brouillons[p.id])
+    if (!Number.isFinite(valeur) || valeur < 0 || valeur > 100) {
+      setMessage({ ok: false, texte: 'La remise doit être comprise entre 0 et 100 %.' })
+      return
+    }
+    const { data, error } = await supabase
+      .from('partenaires')
+      .update({ remise_pct: valeur })
+      .eq('id', p.id)
+      .select('id')
+    // Une mise à jour refusée par les droits ne renvoie pas d'erreur, juste zéro ligne.
+    if (error || !data || data.length === 0) {
+      setMessage({
+        ok: false,
+        texte: error?.message ?? 'Modification refusée : droits insuffisants.',
+      })
+      return
+    }
+    setMessage({
+      ok: true,
+      texte: `Remise de ${p.nom} : ${valeur} %. Elle s'applique aux prochains tickets.`,
+    })
+    setBrouillons(({ [p.id]: _ignore, ...reste }) => reste)
     charger()
   }
 
@@ -154,18 +188,49 @@ export default function Partenaires() {
         {partenaires.length === 0 ? (
           <p className="aide">Aucun partenaire.</p>
         ) : (
-          <ul className="ticket">
-            {partenaires.map((p) => (
-              <li key={p.id}>
-                <span>{p.nom}</span>
-                <span className="discret">{p.actif ? 'Actif' : 'Désactivé'}</span>
-                {peut('partenaires.gerer') && (
-                  <button type="button" className="secondaire petit" onClick={() => basculer(p)}>
-                    {p.actif ? 'Désactiver' : 'Réactiver'}
-                  </button>
-                )}
-              </li>
-            ))}
+          <ul className="ticket liste-partenaires">
+            {partenaires.map((p) => {
+              const saisie = brouillons[p.id]
+              const modifiee = saisie !== undefined && Number(saisie) !== Number(p.remise_pct)
+              return (
+                <li key={p.id}>
+                  <span>
+                    {p.nom} <span className="discret">{p.actif ? 'Actif' : 'Désactivé'}</span>
+                  </span>
+                  {peut('partenaires.gerer') ? (
+                    <div className="remise-edit">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        max={100}
+                        step="any"
+                        value={saisie ?? String(Number(p.remise_pct))}
+                        onChange={(e) => setBrouillons((b) => ({ ...b, [p.id]: e.target.value }))}
+                        onFocus={(e) => e.target.select()}
+                        aria-label={`Remise de ${p.nom} en pourcentage`}
+                      />
+                      <span>%</span>
+                      <button
+                        type="button"
+                        className="petit"
+                        disabled={!modifiee}
+                        onClick={() => enregistrerRemise(p)}
+                      >
+                        Enregistrer
+                      </button>
+                    </div>
+                  ) : (
+                    <strong>−{Number(p.remise_pct)} %</strong>
+                  )}
+                  {peut('partenaires.gerer') && (
+                    <button type="button" className="secondaire petit" onClick={() => basculer(p)}>
+                      {p.actif ? 'Désactiver' : 'Réactiver'}
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
         {peut('partenaires.gerer') && (
@@ -173,6 +238,19 @@ export default function Partenaires() {
             <label>
               Nouveau partenaire
               <input value={nom} onChange={(e) => setNom(e.target.value)} required />
+            </label>
+            <label className="champ-court">
+              Remise (%)
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={100}
+                step="any"
+                value={remiseNouveau}
+                onChange={(e) => setRemiseNouveau(e.target.value)}
+                required
+              />
             </label>
             <button type="submit" disabled={busy}>
               Ajouter

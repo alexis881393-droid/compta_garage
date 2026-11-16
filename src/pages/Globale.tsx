@@ -18,6 +18,7 @@ type VenteArchive = {
   benefice: number
   remise_pct: number
   employe: { nom: string | null; nom_complet: string | null } | null
+  employe_nom: string | null
   partenaire: { nom: string } | null
 }
 
@@ -27,6 +28,7 @@ type ChargeArchive = {
   libelle: string
   montant: number
   auteur: { nom: string | null; nom_complet: string | null } | null
+  cree_par_nom: string | null
 }
 
 /**
@@ -45,13 +47,13 @@ function ArchiveSemaine({ archive: a }: { archive: Archive }) {
       supabase
         .from('ventes')
         .select(
-          'id, created_at, ticket_id, type, libelle, quantite, prix_usine, benefice, remise_pct, employe:profils(nom, nom_complet), partenaire:partenaires(nom)',
+          'id, created_at, ticket_id, type, libelle, quantite, prix_usine, benefice, remise_pct, employe_nom, employe:profils(nom, nom_complet), partenaire:partenaires(nom)',
         )
         .eq('semaine_id', a.id)
         .order('created_at'),
       supabase
         .from('charges')
-        .select('id, created_at, libelle, montant, auteur:profils(nom, nom_complet)')
+        .select('id, created_at, libelle, montant, cree_par_nom, auteur:profils(nom, nom_complet)')
         .eq('semaine_id', a.id)
         .order('created_at'),
     ])
@@ -94,7 +96,7 @@ function ArchiveSemaine({ archive: a }: { archive: Archive }) {
                     <tr key={c.id}>
                       <td>{dateHeure(c.created_at)}</td>
                       <td>{c.libelle}</td>
-                      <td>{nomAffiche(c.auteur)}</td>
+                      <td>{nomAffiche(c.auteur, c.cree_par_nom)}</td>
                       <td className="num">{dollars(c.montant)}</td>
                     </tr>
                   ))}
@@ -135,7 +137,7 @@ function ArchiveSemaine({ archive: a }: { archive: Archive }) {
                     <tr key={v.id}>
                       <td>{dateHeure(v.created_at)}</td>
                       <td>{v.ticket_id ?? '—'}</td>
-                      <td>{nomAffiche(v.employe)}</td>
+                      <td>{nomAffiche(v.employe, v.employe_nom)}</td>
                       <td>
                         {v.libelle}
                         {v.quantite > 1 && ` × ${v.quantite}`}

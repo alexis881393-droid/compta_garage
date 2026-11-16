@@ -14,6 +14,7 @@ type LigneFacture = {
   prix_usine: number
   benefice: number
   employe: { nom: string | null; nom_complet: string | null } | null
+  employe_nom: string | null
 }
 
 export default function Partenaires() {
@@ -34,7 +35,7 @@ export default function Partenaires() {
       supabase
         .from('ventes')
         .select(
-          'id, created_at, ticket_id, partenaire_id, libelle, quantite, prix_usine, benefice, employe:profils(nom, nom_complet)',
+          'id, created_at, ticket_id, partenaire_id, libelle, quantite, prix_usine, benefice, employe_nom, employe:profils(nom, nom_complet)',
         )
         .not('partenaire_id', 'is', null)
         .is('facture_le', null)
@@ -158,7 +159,7 @@ export default function Partenaires() {
                       <tr key={l.id}>
                         <td>{dateHeure(l.created_at)}</td>
                         <td>{l.ticket_id ?? '—'}</td>
-                        <td>{nomAffiche(l.employe)}</td>
+                        <td>{nomAffiche(l.employe, l.employe_nom)}</td>
                         <td>
                           {l.libelle}
                           {l.quantite > 1 && ` × ${l.quantite}`}

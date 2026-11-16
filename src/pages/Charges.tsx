@@ -9,6 +9,7 @@ type Charge = {
   libelle: string
   montant: number
   auteur: { nom: string | null; nom_complet: string | null } | null
+  cree_par_nom: string | null
 }
 
 export default function Charges() {
@@ -26,7 +27,7 @@ export default function Charges() {
     const semaine = await supabase.rpc('semaine_ouverte')
     const c = await supabase
       .from('charges')
-      .select('id, created_at, libelle, montant, auteur:profils(nom, nom_complet)')
+      .select('id, created_at, libelle, montant, cree_par_nom, auteur:profils(nom, nom_complet)')
       .eq('semaine_id', semaine.data ?? -1)
       .order('created_at', { ascending: false })
     const err = semaine.error ?? c.error
@@ -121,7 +122,7 @@ export default function Charges() {
                   <tr key={c.id}>
                     <td>{dateHeure(c.created_at)}</td>
                     <td>{c.libelle}</td>
-                    <td>{nomAffiche(c.auteur)}</td>
+                    <td>{nomAffiche(c.auteur, c.cree_par_nom)}</td>
                     <td className="num">{dollars(c.montant)}</td>
                     <td className="num">
                       <button type="button" className="secondaire petit" onClick={() => retirer(c)}>

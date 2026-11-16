@@ -927,6 +927,56 @@ begin
 end;
 $$;
 
+-- Supprime un employé : son compte (il ne peut plus se connecter), son profil et
+-- sa fiche. Ses ventes et charges passées restent dans la compta, avec son nom
+-- (voir garder_nom_avant_suppression). Mêmes règles de hiérarchie que maj_employe :
+-- sans 'admin.utilisateurs', seulement les grades inférieurs au sien. Personne ne
+-- peut supprimer son propre compte. Une invitation en attente est simplement retirée.
+create or replace function public.supprimer_employe(p_fiche bigint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  f public.fiches;
+  mon_niveau int;
+  cible_niveau int;
+begin
+  if not public.a_permission('equipe.gerer') then
+    raise exception 'Accès refusé';
+  end if;
+  select * into f from public.fiches where id = p_fiche;
+  if not found then
+    raise exception 'Fiche introuvable';
+  end if;
+
+  if f.profil_id is null then
+    perform public.verifier_grade_attribuable(f.grade_id);
+    delete from public.fiches where id = p_fiche;
+    return;
+  end if;
+
+  if f.profil_id = auth.uid() then
+    raise exception 'Vous ne pouvez pas supprimer votre propre compte';
+  end if;
+  if not public.a_permission('admin.utilisateurs') then
+    select g.niveau into mon_niveau
+    from public.profils p join public.grades g on g.id = p.grade_id
+    where p.id = auth.uid();
+    select coalesce(g.niveau, 0) into cible_niveau
+    from public.profils p left join public.grades g on g.id = p.grade_id
+    where p.id = f.profil_id;
+    if cible_niveau >= coalesce(mon_niveau, 0) then
+      raise exception 'Vous ne pouvez gérer que les grades inférieurs au vôtre';
+    end if;
+  end if;
+
+  -- La suppression du compte entraîne celle du profil et de la fiche (cascade).
+  delete from auth.users where id = f.profil_id;
+end;
+$$;
+
 -- Supprime une invitation dont le code n'a pas encore été utilisé.
 create or replace function public.annuler_invitation(p_id bigint)
 returns void
@@ -981,6 +1031,34 @@ begin
 end;
 $$;
 
+-- Historique : quand un profil est supprimé, ses ventes et charges perdent le lien
+-- (employe_id passe à null). On y recopie son nom juste avant pour que la compta
+-- continue d'afficher qui a vendu.
+alter table public.ventes add column if not exists employe_nom text;
+alter table public.charges add column if not exists cree_par_nom text;
+
+create or replace function public.garder_nom_avant_suppression()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.ventes
+  set employe_nom = coalesce(old.nom_complet, old.nom)
+  where employe_id = old.id;
+  update public.charges
+  set cree_par_nom = coalesce(old.nom_complet, old.nom)
+  where cree_par = old.id;
+  return old;
+end;
+$$;
+
+drop trigger if exists profils_garder_nom on public.profils;
+create trigger profils_garder_nom
+  before delete on public.profils
+  for each row execute function public.garder_nom_avant_suppression();
+
 -- Totaux par type sur les ventes de la semaine ouverte visibles par l'utilisateur.
 create or replace function public.totaux_ventes()
 returns table (type text, nombre bigint, prix_usine numeric, benefice numeric)
@@ -1005,6 +1083,8 @@ revoke execute on function public.cloturer_semaine() from public, anon;
 revoke execute on function public.marquer_facture(bigint) from public, anon;
 revoke execute on function public.maj_employe(uuid, int, bigint) from public, anon;
 revoke execute on function public.totaux_ventes() from public, anon;
+revoke execute on function public.supprimer_employe(bigint) from public, anon;
+grant execute on function public.supprimer_employe(bigint) to authenticated;
 revoke execute on function public.maj_permissions(bigint, text[]) from public, anon;
 grant execute on function public.maj_permissions(bigint, text[]) to authenticated;
 revoke execute on function public.nouveau_code() from public, anon, authenticated;

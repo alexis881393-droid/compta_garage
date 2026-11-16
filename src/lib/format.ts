@@ -7,9 +7,14 @@ export const dollars = (n: number) => `${nombre.format(n)} $`
 
 export const entier = (n: number) => nombre.format(n)
 
-/** Nom d'un employé : "prénom nom" de sa fiche, à défaut son pseudo. */
-export const nomAffiche = (p: { nom: string | null; nom_complet: string | null } | null) =>
-  p?.nom_complet ?? p?.nom ?? '—'
+/**
+ * Nom d'un employé : "prénom nom" de sa fiche, à défaut son pseudo. Si le compte a
+ * été supprimé, `nomConserve` est le nom gardé sur la vente ou la charge.
+ */
+export const nomAffiche = (
+  p: { nom: string | null; nom_complet: string | null } | null,
+  nomConserve?: string | null,
+) => p?.nom_complet ?? p?.nom ?? nomConserve ?? '—'
 
 export const date = (iso: string) => jour.format(new Date(iso))
 

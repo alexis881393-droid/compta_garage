@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../auth/AuthProvider'
 import type { Message } from '../lib/types'
 
 type Grade = { id: number; nom: string; niveau: number }
@@ -19,6 +20,7 @@ type Fiche = {
 const VIDE = { prenom: '', nom: '', telephone: '', score: '0', grade: '' }
 
 export default function Equipe() {
+  const { session } = useAuth()
   const [grades, setGrades] = useState<Grade[]>([])
   const [fiches, setFiches] = useState<Fiche[]>([])
   const [message, setMessage] = useState<Message | null>(null)
@@ -99,12 +101,22 @@ export default function Equipe() {
     if (error) charger()
   }
 
-  const annuler = async (f: Fiche) => {
+  const supprimer = async (f: Fiche) => {
     if (!supabase) return
-    if (!window.confirm(`Annuler l'invitation de ${f.prenom} ${f.nom} ? Son code ne marchera plus.`))
-      return
-    const { error } = await supabase.rpc('annuler_invitation', { p_id: f.id })
-    if (error) setMessage({ ok: false, texte: error.message })
+    const nom = `${f.prenom} ${f.nom}`.trim() || f.profil?.nom || 'cet employé'
+    const question = f.profil_id
+      ? `Supprimer ${nom} ? Son compte est supprimé et il ne pourra plus se connecter. ` +
+        'Ses ventes passées restent dans la compta. Cette action est définitive.'
+      : `Supprimer l'invitation de ${nom} ? Son code ne marchera plus.`
+    if (!window.confirm(question)) return
+    setBusy(f.id)
+    const { error } = await supabase.rpc('supprimer_employe', { p_fiche: f.id })
+    setBusy(null)
+    setMessage(
+      error
+        ? { ok: false, texte: error.message }
+        : { ok: true, texte: `${nom} supprimé.` },
+    )
     charger()
   }
 
@@ -281,9 +293,15 @@ export default function Equipe() {
                       <button type="button" onClick={() => enregistrer(f)} disabled={busy === f.id}>
                         Enregistrer
                       </button>
-                      {!f.profil_id && (
-                        <button type="button" className="secondaire" onClick={() => annuler(f)}>
-                          Annuler
+                      {/* Personne ne peut supprimer son propre compte */}
+                      {f.profil_id !== session?.user.id && (
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() => supprimer(f)}
+                          disabled={busy === f.id}
+                        >
+                          Supprimer
                         </button>
                       )}
                     </div>

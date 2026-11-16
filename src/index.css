@@ -864,7 +864,7 @@ td button {
    dans la page sans barre de défilement (défilement seulement sur petit écran). */
 table.equipe {
   table-layout: fixed;
-  min-width: 760px;
+  min-width: 860px;
 }
 
 table.equipe th,
@@ -874,9 +874,18 @@ table.equipe td {
   overflow-wrap: anywhere;
 }
 
+/* Enregistrer et Supprimer côte à côte, sur une seule ligne */
 table.equipe .actions {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
+}
+
+table.equipe .actions button {
+  flex: 1 1 0;
+  max-width: 150px;
+  white-space: nowrap;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 /* ---------- Blocs repliables (archives, factures) ---------- */

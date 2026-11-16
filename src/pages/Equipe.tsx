@@ -204,13 +204,13 @@ export default function Equipe() {
         <div className="table-scroll">
           <table className="equipe">
             <colgroup>
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '14%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '12%' }} />
               <col style={{ width: '13%' }} />
-              <col style={{ width: '17%' }} />
               <col style={{ width: '11%' }} />
-              <col style={{ width: '17%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '29%' }} />
             </colgroup>
             <thead>
               <tr>

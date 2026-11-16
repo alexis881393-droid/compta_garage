@@ -72,6 +72,37 @@ insert into public.fiches (profil_id, activee_le)
 select p.id, p.created_at from public.profils p
 where not exists (select 1 from public.fiches f where f.profil_id = p.id);
 
+-- Nom affiché dans les ventes : "prénom nom" de la fiche. Seul le nom est recopié
+-- sur le profil (lisible par les employés) ; le téléphone reste dans la fiche,
+-- visible de la direction uniquement. Un déclencheur garde les deux synchronisés.
+alter table public.profils add column if not exists nom_complet text;
+
+create or replace function public.sync_nom_complet()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.profil_id is not null then
+    update public.profils
+    set nom_complet = nullif(trim(coalesce(new.prenom, '') || ' ' || coalesce(new.nom, '')), '')
+    where id = new.profil_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists fiches_sync_nom on public.fiches;
+create trigger fiches_sync_nom
+  after insert or update of prenom, nom, profil_id on public.fiches
+  for each row execute function public.sync_nom_complet();
+
+update public.profils p
+set nom_complet = nullif(trim(coalesce(f.prenom, '') || ' ' || coalesce(f.nom, '')), '')
+from public.fiches f
+where f.profil_id = p.id;
+
 -- Crée le profil à l'inscription. Le tout premier compte devient Patron. Tous
 -- les suivants doivent fournir un code d'invitation valide : sans lui,
 -- l'inscription est refusée (personne ne peut s'inscrire seul).

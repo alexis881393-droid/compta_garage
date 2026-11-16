@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
-import { dateHeure, dollars } from '../lib/format'
+import { dateHeure, dollars, nomAffiche } from '../lib/format'
 import { useAuth } from '../auth/AuthProvider'
 import type { Message, Partenaire } from '../lib/types'
 
@@ -13,7 +13,7 @@ type LigneFacture = {
   quantite: number
   prix_usine: number
   benefice: number
-  employe: { nom: string | null } | null
+  employe: { nom: string | null; nom_complet: string | null } | null
 }
 
 export default function Partenaires() {
@@ -34,7 +34,7 @@ export default function Partenaires() {
       supabase
         .from('ventes')
         .select(
-          'id, created_at, ticket_id, partenaire_id, libelle, quantite, prix_usine, benefice, employe:profils(nom)',
+          'id, created_at, ticket_id, partenaire_id, libelle, quantite, prix_usine, benefice, employe:profils(nom, nom_complet)',
         )
         .not('partenaire_id', 'is', null)
         .is('facture_le', null)
@@ -158,7 +158,7 @@ export default function Partenaires() {
                       <tr key={l.id}>
                         <td>{dateHeure(l.created_at)}</td>
                         <td>{l.ticket_id ?? '—'}</td>
-                        <td>{l.employe?.nom ?? '—'}</td>
+                        <td>{nomAffiche(l.employe)}</td>
                         <td>
                           {l.libelle}
                           {l.quantite > 1 && ` × ${l.quantite}`}

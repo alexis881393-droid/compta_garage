@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { date, dateHeure, dollars } from '../lib/format'
+import { date, dateHeure, dollars, nomAffiche } from '../lib/format'
 import { useAuth } from '../auth/AuthProvider'
 import ResumeSemaine, { CascadeCompta } from '../components/ResumeSemaine'
 import type { Message, Resume } from '../lib/types'
@@ -17,7 +17,7 @@ type VenteArchive = {
   prix_usine: number
   benefice: number
   remise_pct: number
-  employe: { nom: string | null } | null
+  employe: { nom: string | null; nom_complet: string | null } | null
   partenaire: { nom: string } | null
 }
 
@@ -26,7 +26,7 @@ type ChargeArchive = {
   created_at: string
   libelle: string
   montant: number
-  auteur: { nom: string | null } | null
+  auteur: { nom: string | null; nom_complet: string | null } | null
 }
 
 /**
@@ -45,13 +45,13 @@ function ArchiveSemaine({ archive: a }: { archive: Archive }) {
       supabase
         .from('ventes')
         .select(
-          'id, created_at, ticket_id, type, libelle, quantite, prix_usine, benefice, remise_pct, employe:profils(nom), partenaire:partenaires(nom)',
+          'id, created_at, ticket_id, type, libelle, quantite, prix_usine, benefice, remise_pct, employe:profils(nom, nom_complet), partenaire:partenaires(nom)',
         )
         .eq('semaine_id', a.id)
         .order('created_at'),
       supabase
         .from('charges')
-        .select('id, created_at, libelle, montant, auteur:profils(nom)')
+        .select('id, created_at, libelle, montant, auteur:profils(nom, nom_complet)')
         .eq('semaine_id', a.id)
         .order('created_at'),
     ])
@@ -94,7 +94,7 @@ function ArchiveSemaine({ archive: a }: { archive: Archive }) {
                     <tr key={c.id}>
                       <td>{dateHeure(c.created_at)}</td>
                       <td>{c.libelle}</td>
-                      <td>{c.auteur?.nom ?? '—'}</td>
+                      <td>{nomAffiche(c.auteur)}</td>
                       <td className="num">{dollars(c.montant)}</td>
                     </tr>
                   ))}
@@ -135,7 +135,7 @@ function ArchiveSemaine({ archive: a }: { archive: Archive }) {
                     <tr key={v.id}>
                       <td>{dateHeure(v.created_at)}</td>
                       <td>{v.ticket_id ?? '—'}</td>
-                      <td>{v.employe?.nom ?? '—'}</td>
+                      <td>{nomAffiche(v.employe)}</td>
                       <td>
                         {v.libelle}
                         {v.quantite > 1 && ` × ${v.quantite}`}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { dollars } from '../lib/format'
+import { dollars, nomAffiche } from '../lib/format'
 import { useAuth } from '../auth/AuthProvider'
 
 type Vente = {
@@ -11,7 +11,7 @@ type Vente = {
   quantite: number
   prix_usine: number
   benefice: number
-  employe: { nom: string | null } | null
+  employe: { nom: string | null; nom_complet: string | null } | null
 }
 type Total = { type: string; nombre: number; prix_usine: number; benefice: number }
 
@@ -38,7 +38,7 @@ export default function Compta() {
           client
             .from('ventes')
             .select(
-              'id, created_at, type, libelle, quantite, prix_usine, benefice, employe:profils(nom)',
+              'id, created_at, type, libelle, quantite, prix_usine, benefice, employe:profils(nom, nom_complet)',
             )
             .eq('semaine_id', s.data ?? -1)
             .order('created_at', { ascending: false })
@@ -112,7 +112,7 @@ export default function Compta() {
                 {ventes.map((v) => (
                   <tr key={v.id}>
                     <td>{dateHeure.format(new Date(v.created_at))}</td>
-                    <td>{v.employe?.nom ?? '—'}</td>
+                    <td>{nomAffiche(v.employe)}</td>
                     <td>
                       {v.libelle}
                       {v.quantite > 1 && ` × ${v.quantite}`}

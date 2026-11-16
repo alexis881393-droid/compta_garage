@@ -553,10 +553,12 @@ button.valider {
 
 /* ---------- Caisse ---------- */
 
+/* Toutes les touches sur une seule ligne, à largeur égale quel que soit leur nombre */
 .boutons-reparation {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-  gap: 12px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 10px;
 }
 
 /* Grandes touches de verre, une par réparation */
@@ -564,22 +566,23 @@ button.gros {
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 14px;
   min-height: 116px;
-  padding: 16px 16px 14px;
+  padding: 14px 12px 14px;
   border-radius: var(--r-bloc);
   border-color: rgba(255, 255, 255, 0.4);
   background: linear-gradient(165deg, #5f88f7, #3562dc 50%, #2a52c8);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 14px 26px -14px rgba(47, 95, 224, 1);
   text-align: left;
-  font-size: 1.02rem;
+  font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 button.gros strong {
   font-family: var(--titre);
-  font-size: 1.55rem;
+  font-size: 1.4rem;
   font-weight: 700;
   line-height: 1;
   color: #ffe2b3;
@@ -1194,5 +1197,13 @@ table.acces td:first-child {
 
   .ticket.avec-quantite li > :first-child {
     grid-column: 1 / -1;
+  }
+}
+
+/* Téléphone : trop étroit pour 4 touches côte à côte, on passe en 2 x 2 */
+@media (max-width: 640px) {
+  .boutons-reparation {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -864,7 +864,7 @@ td button {
    dans la page sans barre de défilement (défilement seulement sur petit écran). */
 table.equipe {
   table-layout: fixed;
-  min-width: 860px;
+  min-width: 940px;
 }
 
 table.equipe th,

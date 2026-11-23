@@ -67,6 +67,10 @@ create table if not exists public.fiches (
   activee_le   timestamptz
 );
 
+-- Compte bancaire de l'employé (pour le verser). Comme le téléphone, il reste dans
+-- la fiche : visible de la direction uniquement.
+alter table public.fiches add column if not exists compte_bancaire text not null default '';
+
 -- Les comptes créés avant le système d'invitation reçoivent une fiche vide.
 insert into public.fiches (profil_id, activee_le)
 select p.id, p.created_at from public.profils p
@@ -858,8 +862,10 @@ end;
 $$;
 
 -- Crée la fiche d'un futur employé et renvoie son code d'invitation.
+drop function if exists public.creer_invitation(text, text, text, int, bigint);
 create or replace function public.creer_invitation(
-  p_prenom text, p_nom text, p_telephone text, p_score int, p_grade bigint
+  p_prenom text, p_nom text, p_telephone text, p_score int, p_grade bigint,
+  p_compte_bancaire text default ''
 )
 returns text
 language plpgsql
@@ -883,16 +889,19 @@ begin
   end if;
   perform public.verifier_grade_attribuable(p_grade);
   c := public.nouveau_code();
-  insert into public.fiches (code, prenom, nom, telephone, score_social, grade_id)
-  values (c, trim(p_prenom), trim(p_nom), trim(coalesce(p_telephone, '')), p_score, p_grade);
+  insert into public.fiches (code, prenom, nom, telephone, compte_bancaire, score_social, grade_id)
+  values (c, trim(p_prenom), trim(p_nom), trim(coalesce(p_telephone, '')),
+          trim(coalesce(p_compte_bancaire, '')), p_score, p_grade);
   return c;
 end;
 $$;
 
 -- Modifie une fiche. Compte déjà créé : score et grade passent par maj_employe
 -- (mêmes contrôles de hiérarchie). Invitation en attente : ils restent sur la fiche.
+drop function if exists public.maj_fiche(bigint, text, text, text, int, bigint);
 create or replace function public.maj_fiche(
-  p_id bigint, p_prenom text, p_nom text, p_telephone text, p_score int, p_grade bigint
+  p_id bigint, p_prenom text, p_nom text, p_telephone text, p_score int, p_grade bigint,
+  p_compte_bancaire text default ''
 )
 returns void
 language plpgsql
@@ -922,6 +931,7 @@ begin
   set prenom = trim(coalesce(p_prenom, '')),
       nom = trim(coalesce(p_nom, '')),
       telephone = trim(coalesce(p_telephone, '')),
+      compte_bancaire = trim(coalesce(p_compte_bancaire, '')),
       score_social = p_score,
       grade_id = p_grade
   where id = p_id;
@@ -1090,12 +1100,12 @@ revoke execute on function public.maj_permissions(bigint, text[]) from public, a
 grant execute on function public.maj_permissions(bigint, text[]) to authenticated;
 revoke execute on function public.nouveau_code() from public, anon, authenticated;
 revoke execute on function public.verifier_grade_attribuable(bigint) from public, anon;
-revoke execute on function public.creer_invitation(text, text, text, int, bigint) from public, anon;
-revoke execute on function public.maj_fiche(bigint, text, text, text, int, bigint) from public, anon;
+revoke execute on function public.creer_invitation(text, text, text, int, bigint, text) from public, anon;
+revoke execute on function public.maj_fiche(bigint, text, text, text, int, bigint, text) from public, anon;
 revoke execute on function public.annuler_invitation(bigint) from public, anon;
 grant execute on function public.verifier_grade_attribuable(bigint) to authenticated;
-grant execute on function public.creer_invitation(text, text, text, int, bigint) to authenticated;
-grant execute on function public.maj_fiche(bigint, text, text, text, int, bigint) to authenticated;
+grant execute on function public.creer_invitation(text, text, text, int, bigint, text) to authenticated;
+grant execute on function public.maj_fiche(bigint, text, text, text, int, bigint, text) to authenticated;
 grant execute on function public.annuler_invitation(bigint) to authenticated;
 grant execute on function public.enregistrer_ticket(jsonb, bigint) to authenticated;
 grant execute on function public.mon_salaire() to authenticated;

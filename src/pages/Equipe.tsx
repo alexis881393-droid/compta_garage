@@ -11,13 +11,14 @@ type Fiche = {
   prenom: string
   nom: string
   telephone: string
+  compte_bancaire: string
   score_social: number
   grade_id: number | null
   profil_id: string | null
   profil: { nom: string | null; score_social: number; grade_id: number | null } | null
 }
 
-const VIDE = { prenom: '', nom: '', telephone: '', score: '0', grade: '' }
+const VIDE = { prenom: '', nom: '', telephone: '', compte: '', score: '0', grade: '' }
 
 export default function Equipe() {
   const { session } = useAuth()
@@ -35,7 +36,7 @@ export default function Equipe() {
       supabase
         .from('fiches')
         .select(
-          'id, code, prenom, nom, telephone, score_social, grade_id, profil_id, profil:profils(nom, score_social, grade_id)',
+          'id, code, prenom, nom, telephone, compte_bancaire, score_social, grade_id, profil_id, profil:profils(nom, score_social, grade_id)',
         )
         .order('created_at'),
     ])
@@ -64,6 +65,7 @@ export default function Equipe() {
       p_prenom: nouveau.prenom,
       p_nom: nouveau.nom,
       p_telephone: nouveau.telephone,
+      p_compte_bancaire: nouveau.compte,
       p_score: Math.max(0, Math.floor(Number(nouveau.score) || 0)),
       p_grade: Number(nouveau.grade),
     })
@@ -89,6 +91,7 @@ export default function Equipe() {
       p_prenom: f.prenom,
       p_nom: f.nom,
       p_telephone: f.telephone,
+      p_compte_bancaire: f.compte_bancaire,
       p_score: f.score_social,
       p_grade: f.grade_id,
     })
@@ -158,6 +161,13 @@ export default function Equipe() {
             />
           </label>
           <label>
+            Compte bancaire
+            <input
+              value={nouveau.compte}
+              onChange={(e) => setNouveau({ ...nouveau, compte: e.target.value })}
+            />
+          </label>
+          <label>
             Score social
             <input
               type="number"
@@ -198,25 +208,27 @@ export default function Equipe() {
       <section className="panneau">
         <h2>Équipe</h2>
         <p className="aide">
-          Vrai nom et téléphone ne sont visibles que par la direction. Le score social fixe la
+          Téléphone et compte bancaire ne sont visibles que par la direction. Le score social fixe la
           fourchette de salaire et le pourcentage de prime.
         </p>
         <div className="table-scroll">
           <table className="equipe">
             <colgroup>
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '13%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '10%' }} />
               <col style={{ width: '11%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '9%' }} />
-              <col style={{ width: '29%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '28%' }} />
             </colgroup>
             <thead>
               <tr>
                 <th>Prénom</th>
                 <th>Nom</th>
                 <th>Téléphone</th>
+                <th>Compte bancaire</th>
                 <th>Pseudo / code</th>
                 <th>Grade</th>
                 <th>Score social</th>
@@ -246,6 +258,13 @@ export default function Equipe() {
                       value={f.telephone}
                       onChange={(e) => modifier(f.id, { telephone: e.target.value })}
                       aria-label={`Téléphone de ${qui(f)}`}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={f.compte_bancaire}
+                      onChange={(e) => modifier(f.id, { compte_bancaire: e.target.value })}
+                      aria-label={`Compte bancaire de ${qui(f)}`}
                     />
                   </td>
                   <td>
